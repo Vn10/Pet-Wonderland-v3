@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Inventory</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:16px; font-size:.95rem; }
+    .inv-wrap { display:flex; flex-direction:column; gap:10px; }
+    .inv-card {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background:var(--card); border:2px solid var(--border); border-radius:16px; padding:12px 14px;
+    }
+    .inv-left { display:flex; align-items:center; gap:12px; }
+    .inv-icon { font-size:1.9rem; width:36px; text-align:center; }
+    .inv-name { font-weight:800; font-size:.98rem; color:var(--text); }
+    .inv-meta { font-size:.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .inv-qty {
+      min-width:44px; text-align:center; font-weight:900; color:var(--yellow);
+      background:var(--bg2); border:1px solid var(--border); border-radius:999px; padding:5px 10px;
+    }
+    .empty {
+      background:var(--card); border:2px dashed var(--border); border-radius:18px; padding:24px; text-align:center;
+      color:var(--text-muted); font-weight:700;
+    }
+    .equipped { border-color:var(--yellow); }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">🎒 Inventory</div>
+    <p class="page-sub">All items your pet owns</p>
+    <div id="invRoot" class="inv-wrap"></div>
+  </div>
+
+  <script>
+    const ITEM_META = {
+      rubber_duck:{emoji:'🦆',name:'Rubber Duck',cat:'Toy'}, chew_bone:{emoji:'🦴',name:'Chew Bone',cat:'Toy'},
+      ultra_ball:{emoji:'⚽',name:'Ultra Ball',cat:'Toy'}, laser_pointer:{emoji:'🔴',name:'Laser Pointer',cat:'Toy'},
+      feather_wand:{emoji:'🪶',name:'Feather Wand',cat:'Toy'}, dragon_plush:{emoji:'🧸',name:'Dragon Plush',cat:'Toy'},
+      premium_kibble:{emoji:'🥣',name:'Premium Kibble',cat:'Food'}, gourmet_steak:{emoji:'🥩',name:'Gourmet Steak',cat:'Food'},
+      magic_biscuits:{emoji:'✨',name:'Magic Biscuits',cat:'Food'}, rainbow_candy:{emoji:'🍬',name:'Rainbow Candy',cat:'Food'},
+      elixir:{emoji:'🧪',name:'Elixir of Life',cat:'Food'}, shampoo:{emoji:'🧴',name:'Premium Shampoo',cat:'Care'},
+      vitamin_pack:{emoji:'💊',name:'Vitamin Pack',cat:'Care'}, first_aid_kit:{emoji:'🩺',name:'First Aid Kit',cat:'Care'},
+      spa_day:{emoji:'💆',name:'Spa Day Package',cat:'Care'}, sleepy_bed:{emoji:'🛏️',name:'Cozy Pet Bed',cat:'Care'},
+      miracle_cure:{emoji:'💉',name:'Miracle Cure',cat:'Care'}, xp_scroll:{emoji:'📜',name:'XP Scroll',cat:'XP'},
+      xp_tome:{emoji:'📚',name:'Ancient Tome',cat:'XP'}, xp_crystal:{emoji:'💎',name:'XP Crystal',cat:'XP'},
+      xp_star:{emoji:'⭐',name:'Star Fragment',cat:'XP'}, cozy_mat:{emoji:'🪑',name:'Cozy Mat',cat:'Home'},
+      aquarium:{emoji:'🐠',name:'Mini Aquarium',cat:'Home'}, obstacle_course:{emoji:'🏋️',name:'Obstacle Course',cat:'Home'},
+      mansion:{emoji:'🏰',name:'Pet Mansion',cat:'Home'}
+    };
+
+    function renderInventory() {
+      const s = getState();
+      const inv = (s && s.inventory) ? s.inventory : {};
+      const entries = Object.entries(inv).filter(([, qty]) => {
+        const n = typeof qty === 'boolean' ? (qty ? 1 : 0) : parseInt(qty || 0, 10);
+        return n > 0;
+      });
+      const root = document.getElementById('invRoot');
+
+      if (!entries.length) {
+        root.innerHTML = '<div class="empty">No items yet. Visit the Shop to buy your first item! 🛒</div>';
+        return;
+      }
+
+      entries.sort((a, b) => (a[0] > b[0] ? 1 : -1));
+      root.innerHTML = entries.map(([id, qty]) => {
+        const meta = ITEM_META[id] || { emoji:'📦', name:id, cat:'Item' };
+        const isEquipped = s.equippedToy === id;
+        const shownQty = typeof qty === 'boolean' ? (qty ? 1 : 0) : parseInt(qty || 0, 10);
+        return `
+          <div class="inv-card ${isEquipped ? 'equipped' : ''}">
+            <div class="inv-left">
+              <div class="inv-icon">${meta.emoji}</div>
+              <div>
+                <div class="inv-name">${meta.name}</div>
+                <div class="inv-meta">${meta.cat}${isEquipped ? ' • Equipped' : ''}</div>
+              </div>
+            </div>
+            <div class="inv-qty">x${shownQty}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.addEventListener('petTick', renderInventory);
+    renderInventory();
+  </script>
+</body>
+</html>
