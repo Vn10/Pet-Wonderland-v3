@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Pal — Actions</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.8rem;
+      color: var(--text);
+      margin: 20px 0 4px;
+    }
+    .page-sub { color: var(--text-muted); font-weight: 600; margin-bottom: 20px; font-size: 0.95rem; }
+
+    /* ── Pet Hero ── */
+    .pet-hero-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0 8px;
+    }
+    .pet-hero-stage {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pet-hero-display {
+      font-size: 7rem;
+      line-height: 1;
+      filter: drop-shadow(0 6px 18px rgba(167,139,250,.4));
+      animation: pet-float 4s ease-in-out infinite;
+      display: block;
+      text-align: center;
+      user-select: none;
+    }
+    @keyframes pet-float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    .action-burst {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .action-burst.pop {
+      animation: burst-pop 0.65s cubic-bezier(.175,.885,.32,1.3) forwards;
+    }
+    @keyframes burst-pop {
+      0%   { opacity: 0; transform: scale(0.2) rotate(-20deg); }
+      40%  { opacity: 1; transform: scale(1.3) rotate(8deg); }
+      70%  { opacity: 1; transform: scale(0.95) rotate(-3deg); }
+      100% { opacity: 0; transform: scale(1.1) rotate(0deg); }
+    }
+
+    .ripple-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      animation: ring-expand 0.65s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ring-expand {
+      0%   { transform: scale(0.4); opacity: 0.9; }
+      100% { transform: scale(1.9); opacity: 0; }
+    }
+
+    .pet-hero-display.bounce {
+      animation: pet-bounce 0.55s cubic-bezier(.175,.885,.32,1.4) !important;
+    }
+    .pet-hero-display.shake {
+      animation: pet-shake 0.4s ease !important;
+    }
+    @keyframes pet-bounce {
+      0%   { transform: scale(1) translateY(0); }
+      30%  { transform: scale(1.22) translateY(-18px); }
+      60%  { transform: scale(0.96) translateY(0); }
+      80%  { transform: scale(1.06) translateY(-6px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes pet-shake {
+      0%,100% { transform: translateX(0) rotate(0deg); }
+      20%     { transform: translateX(-8px) rotate(-3deg); }
+      40%     { transform: translateX(8px) rotate(3deg); }
+      60%     { transform: translateX(-5px) rotate(-2deg); }
+      80%     { transform: translateX(5px) rotate(2deg); }
+    }
+
+    .xp-float {
+      position: absolute;
+      top: 4px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      color: var(--yellow);
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+      pointer-events: none;
+      animation: xp-rise 1.3s ease-out forwards;
+      z-index: 20;
+      white-space: nowrap;
+    }
+    @keyframes xp-rise {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.7); }
+      20%  { opacity: 1; transform: translateX(-50%) translateY(-8px) scale(1.1); }
+      75%  { opacity: 1; transform: translateX(-50%) translateY(-38px) scale(1); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-55px) scale(0.9); }
+    }
+
+    .pet-hero-name {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.3rem;
+      color: var(--text);
+      margin-top: 6px;
+    }
+    .pet-hero-mood {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .xp-mini {
+      width: 100%;
+      max-width: 200px;
+      margin-top: 10px;
+    }
+    .xp-mini-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 4px;
+    }
+    .xp-mini-track {
+      height: 6px;
+      background: var(--bg2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .xp-mini-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--yellow), var(--orange));
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(.25,.8,.25,1);
+    }
+
+    /* ── Action cards ── */
+    .action-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .action-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: all 0.18s;
+      width: 100%;
+      text-align: left;
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      position: relative;
+      overflow: hidden;
+    }
+    .action-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+      transition: width 0.2s;
+    }
+    .action-card:hover { transform: translateX(4px); border-color: var(--border-hi); }
+    .action-card:hover::before { width: 6px; }
+    .action-card:active { transform: scale(0.98); }
+
+    .action-card.feed::before   { background: var(--orange); }
+    .action-card.play::before   { background: var(--purple); }
+    .action-card.rest::before   { background: var(--blue); }
+    .action-card.clean::before  { background: var(--teal); }
+    .action-card.vet::before    { background: var(--green); }
+
+    .action-card.feed   { border-left-color: rgba(251,146,60,.5); }
+    .action-card.play   { border-left-color: rgba(167,139,250,.5); }
+    .action-card.rest   { border-left-color: rgba(96,165,250,.5); }
+    .action-card.clean  { border-left-color: rgba(45,212,191,.5); }
+    .action-card.vet    { border-left-color: rgba(52,211,153,.5); }
+
+    @keyframes card-used {
+      0%   { box-shadow: 0 0 0 0 rgba(167,139,250,0); }
+      40%  { box-shadow: 0 0 0 8px rgba(167,139,250,.25); }
+      100% { box-shadow: 0 0 0 0 rgba(167,139,250,0); }
+    }
+    .card-pulse { animation: card-used 0.55s ease-out; }
+
+    .action-icon { font-size: 2.4rem; flex-shrink: 0; width: 52px; text-align: center; }
+
+    .action-info { flex: 1; }
+    .action-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 3px; }
+    .action-desc { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+    .action-effects { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .effect-tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .effect-tag.pos { color: var(--green); border-color: rgba(52,211,153,.3); }
+    .effect-tag.neg { color: var(--red);   border-color: rgba(248,113,113,.3); }
+    .effect-tag.xp  { color: var(--yellow); border-color: rgba(251,191,36,.3); }
+
+    .action-cost {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--yellow);
+      flex-shrink: 0;
+    }
+
+    .status-strip {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .status-strip-name { font-weight: 800; font-size: 1rem; }
+    .status-strip-mood { font-size: 0.88rem; color: var(--text-muted); }
+
+    .disabled-overlay {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+
+    <!-- Pet displayed at top center with animations -->
+    <div class="pet-hero-wrap">
+      <div class="pet-hero-stage" id="petHeroStage">
+        <span class="pet-hero-display" id="petHeroEmoji"></span>
+        <div class="action-burst" id="actionBurst"></div>
+      </div>
+      <div class="pet-hero-name"  id="petHeroName"></div>
+      <div class="pet-hero-mood"  id="petHeroMood"></div>
+      <div class="xp-mini"        id="xpMini"></div>
+    </div>
+
+    <div class="page-title">⚡ Actions</div>
+    <p class="page-sub">Take care of your pet</p>
+
+    <div class="status-strip">
+      <div>
+        <div class="status-strip-name" id="stripName"></div>
+        <div class="status-strip-mood" id="stripMood"></div>
+      </div>
+      <div class="money-chip">💰 $<span id="moneyVal"></span></div>
+    </div>
+
+    <div id="statsContainer" style="margin-bottom:16px"></div>
+
+    <div class="action-grid" id="actionGrid">
+
+      <button class="action-card feed" id="feedCard">
+        <span class="action-icon">🍖</span>
+        <div class="action-info">
+          <div class="action-name">Feed</div>
+          <div class="action-desc">Satisfy your pet's hunger</div>
+          <div class="action-effects">
+            <span class="effect-tag neg">Hunger -20</span>
+            <span class="effect-tag pos">Happy +5</span>
+            <span class="effect-tag xp">+10 XP</span>
+          </div>
+        </div>
+        <span class="action-cost">$3</span>
+      </button>
+
+      <button class="action-card play" id="playCard">
+        <span class="action-icon">🎾</span>
+        <div class="action-info">
+          <div class="action-name">Play</div>
+          <div class="action-desc">Have fun with your toy</div>
+          <div class="action-effects">
+            <span class="effect-tag pos">Happy +15</span>
+            <span class="effect-tag neg">Energy -10</span>
+            <span class="effect-tag neg">Hunger +8</span>
+            <span class="effect-tag xp">+8 XP</span>
+          </div>
+        </div>
+        <span class="action-cost">free</span>
+      </button>
+
+      <button class="action-card rest" id="restCard">
+        <span class="action-icon">💤</span>
+        <div class="action-info">
+          <div class="action-name">Rest</div>
+          <div class="action-desc">Recharge your pet's energy</div>
+          <div class="action-effects">
+            <span class="effect-tag pos">Energy +25</span>
+            <span class="effect-tag neg">Hunger +5</span>
+            <span class="effect-tag xp">+3 XP</span>
+          </div>
+        </div>
+        <span class="action-cost">free</span>
+      </button>
+
+      <button class="action-card clean" id="cleanCard">
+        <span class="action-icon">🛁</span>
+        <div class="action-info">
+          <div class="action-name">Clean</div>
+          <div class="action-desc">Keep your pet fresh and healthy</div>
+          <div class="action-effects">
+            <span class="effect-tag pos">Health +10</span>
+            <span class="effect-tag pos">Happy +5</span>
+            <span class="effect-tag xp">+5 XP</span>
+          </div>
+        </div>
+        <span class="action-cost">$2</span>
+      </button>
+
+      <button class="action-card vet" id="vetCard">
+        <span class="action-icon">🏥</span>
+        <div class="action-info">
+          <div class="action-name">Vet Visit</div>
+          <div class="action-desc">Fully restore your pet's health</div>
+          <div class="action-effects">
+            <span class="effect-tag pos">Health → 100</span>
+            <span class="effect-tag xp">+15 XP</span>
+          </div>
+        </div>
+        <span class="action-cost">$15</span>
+      </button>
+
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <script>
+    let s = getState();
+
+    // ── XP mini bar ──────────────────────────────────────
+    function renderXPMini(s) {
+      const el = document.getElementById('xpMini');
+      if (!el) return;
+      const stage = s.evoStage || 0;
+      const xp    = s.xp || 0;
+      if (stage >= 2) {
+        el.innerHTML = `<div style="font-size:.7rem;font-weight:800;color:var(--yellow);text-align:center;margin-top:2px;">👑 MAX EVOLUTION · ${xp} XP</div>`;
+        return;
+      }
+      const next = EVO_THRESHOLDS[stage + 1];
+      const prev = EVO_THRESHOLDS[stage];
+      const pct  = Math.min(100, ((xp - prev) / (next - prev)) * 100);
+      el.innerHTML = `
+        <div class="xp-mini-header"><span>✨ XP</span><span>${xp} / ${next}</span></div>
+        <div class="xp-mini-track"><div class="xp-mini-fill" style="width:${pct.toFixed(1)}%"></div></div>
+      `;
+    }
+
+    // ── Render ───────────────────────────────────────────
+    function render() {
+      s = getState();
+
+      // Hero pet
+      document.getElementById('petHeroEmoji').textContent = getEvoEmoji(s);
+      document.getElementById('petHeroName').textContent  = s.petName;
+      const mood = getMood(s);
+      document.getElementById('petHeroMood').textContent  = mood.label;
+      renderXPMini(s);
+
+      // Strip
+      document.getElementById('stripName').textContent = PET_EMOJIS[s.petType] + ' ' + s.petName;
+      document.getElementById('stripMood').textContent = mood.label;
+      document.getElementById('moneyVal').textContent  = s.money;
+      renderStats('statsContainer', s);
+
+      // Disable states
+      document.getElementById('feedCard').classList.toggle('disabled-overlay',  s.money < 3);
+      document.getElementById('playCard').classList.toggle('disabled-overlay',  s.energy < 10);
+      document.getElementById('cleanCard').classList.toggle('disabled-overlay', s.money < 2);
+      document.getElementById('vetCard').classList.toggle('disabled-overlay',   s.money < 15);
+    }
+
+    // ── Animation config ─────────────────────────────────
+    const ACTION_META = {
+      feed:  { emojis:['🍖','🥩','🐟'],  ringColor:'#fb923c', positive:true,  xp:10 },
+      play:  { emojis:['🎾','⚽','🏐'],  ringColor:'#a78bfa', positive:true,  xp:8  },
+      rest:  { emojis:['💤','😴','🌙'],  ringColor:'#60a5fa', positive:true,  xp:3  },
+      clean: { emojis:['🛁','✨','🫧'],  ringColor:'#2dd4bf', positive:true,  xp:5  },
+      vet:   { emojis:['💉','💊','🩺'],  ringColor:'#34d399', positive:true,  xp:15 },
+    };
+
+    function triggerAnimation(action, xpGain) {
+      const meta  = ACTION_META[action];
+      const emoji = meta.emojis[Math.floor(Math.random() * meta.emojis.length)];
+      const burst = document.getElementById('actionBurst');
+      const petEl = document.getElementById('petHeroEmoji');
+      const stage = document.getElementById('petHeroStage');
+
+      // Burst emoji over pet
+      burst.textContent = emoji;
+      burst.classList.remove('pop');
+      void burst.offsetWidth;
+      burst.classList.add('pop');
+
+      // Pet bounce
+      petEl.classList.remove('bounce', 'shake');
+      void petEl.offsetWidth;
+      petEl.classList.add(meta.positive ? 'bounce' : 'shake');
+      setTimeout(() => petEl.classList.remove('bounce', 'shake'), 650);
+
+      // Ripple ring
+      const ring = document.createElement('div');
+      ring.className = 'ripple-ring';
+      ring.style.borderColor = meta.ringColor;
+      stage.appendChild(ring);
+      setTimeout(() => ring.remove(), 750);
+
+      // Floating XP
+      const xpEl = document.createElement('div');
+      xpEl.className = 'xp-float';
+      xpEl.textContent = '+' + xpGain + ' XP ✨';
+      stage.appendChild(xpEl);
+      setTimeout(() => xpEl.remove(), 1400);
+
+      // Card pulse glow
+      const cardMap = { feed:'feedCard', play:'playCard', rest:'restCard', clean:'cleanCard', vet:'vetCard' };
+      const card = document.getElementById(cardMap[action]);
+      if (card) {
+        card.classList.remove('card-pulse');
+        void card.offsetWidth;
+        card.classList.add('card-pulse');
+      }
+    }
+
+    // ── Do action ────────────────────────────────────────
+    function doAction(action) {
+      s = getState();
+      const meta = ACTION_META[action];
+      let xpGain = meta.xp;
+
+      if (action === 'feed') {
+        if (s.money < 3) { showToast('❌ Need $3 to feed!'); return; }
+        s.hunger    = clamp(s.hunger - 20);
+        s.happiness = clamp(s.happiness + 5);
+        s.money -= 3; s.totalExpenses += 3;
+        s.feedCount = (s.feedCount || 0) + 1;
+        logTransaction(s, 'spend', 3, 'Fed ' + s.petName, '🍖', 'feed');
+        showToast('🍖 Fed! Hunger -20 · +10 XP');
+
+      } else if (action === 'play') {
+        if (s.energy < 10) { showToast('😴 Too tired! Rest first.'); return; }
+        s.happiness = clamp(s.happiness + 15);
+        s.energy    = clamp(s.energy - 10);
+        s.hunger    = clamp(s.hunger + 8);
+        showToast('🎾 Played! Happy +15 · +8 XP');
+
+      } else if (action === 'rest') {
+        s.energy = clamp(s.energy + 25);
+        s.hunger = clamp(s.hunger + 5);
+        showToast('💤 Rested! Energy +25 · +3 XP');
+
+      } else if (action === 'clean') {
+        if (s.money < 2) { showToast('❌ Need $2 to clean!'); return; }
+        s.health    = clamp(s.health + 10);
+        s.happiness = clamp(s.happiness + 5);
+        s.money -= 2; s.totalExpenses += 2;
+        logTransaction(s, 'spend', 2, 'Cleaned ' + s.petName, '🛁', 'clean');
+        showToast('🛁 Cleaned! Health +10 · +5 XP');
+
+      } else if (action === 'vet') {
+        if (s.money < 15) { showToast('❌ Need $15 for vet!'); return; }
+        s.health = 100;
+        s.money -= 15; s.totalExpenses += 15;
+        logTransaction(s, 'spend', 15, 'Vet visit', '🏥', 'vet');
+        showToast('🏥 Vet! Health = 100 · +15 XP');
+      }
+
+      // ✅ FIX: addXP was missing in the original — this is why XP didn't work from Actions page
+      const didEvolve = addXP(s, xpGain);
+      const newBadges = checkAndAwardBadges(s);
+      saveState(s);
+
+      // Animations
+      triggerAnimation(action, xpGain);
+      render();
+
+      if (didEvolve) {
+        setTimeout(() => showToast('🌟 YOUR PET EVOLVED! Check Evolution! 🎉', 4000), 700);
+      } else if (newBadges.length) {
+        setTimeout(() => showToast('🏆 Badge unlocked: ' + newBadges[0].label + '!', 3000), 700);
+      }
+    }
+
+    document.getElementById('feedCard').addEventListener('click',  () => doAction('feed'));
+    document.getElementById('playCard').addEventListener('click',  () => doAction('play'));
+    document.getElementById('restCard').addEventListener('click',  () => doAction('rest'));
+    document.getElementById('cleanCard').addEventListener('click', () => doAction('clean'));
+    document.getElementById('vetCard').addEventListener('click',   () => doAction('vet'));
+
+    render();
+  </script>
+</body>
+</html>

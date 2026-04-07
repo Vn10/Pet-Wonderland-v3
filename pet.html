@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — My Pet</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .pet-hero { text-align: center; padding: 24px 0 8px; }
+    .pet-stage {
+      position: relative; display: inline-block;
+      width: 200px; height: 200px; margin-bottom: 16px;
+    }
+    .pet-display {
+      width: 200px; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9rem; line-height: 1;
+      filter: drop-shadow(0 8px 24px rgba(167,139,250,.4));
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .action-anim {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .action-anim.show { opacity: 1; animation: burst 0.4s ease; }
+    @keyframes burst { 0%{transform:scale(.3)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+    .pet-name { font-family:'Fredoka One',cursive; font-size:2rem; color:var(--text); letter-spacing:1px; }
+    .pet-evo-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, #1e1800, #2a200a);
+      border: 2px solid var(--yellow);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--yellow);
+      margin-top: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pet-evo-badge:hover { box-shadow: 0 0 16px rgba(251,191,36,.4); }
+
+    /* XP bar */
+    .xp-section { margin: 8px 0 4px; }
+    .xp-header { display:flex; justify-content:space-between; font-size:.72rem; font-weight:800; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.5px; }
+    .xp-track { height:8px; background:var(--bg2); border-radius:999px; overflow:hidden; }
+    .xp-fill { height:100%; background:linear-gradient(90deg,var(--yellow),var(--orange)); border-radius:999px; transition:width .6s cubic-bezier(.25,.8,.25,1); }
+    .xp-maxed { text-align:center; font-size:.78rem; font-weight:800; color:var(--yellow); padding:4px 0; }
+
+    .mood-banner {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      margin:16px 0 8px; padding:12px 20px;
+      background:var(--card); border-radius:16px; border:2px solid var(--border);
+      font-weight:800; font-size:1.1rem;
+    }
+    .mood-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+    .quick-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;
+    }
+    .quick-btn {
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:16px 12px; cursor:pointer; transition:all 0.18s;
+      text-align:center; color:var(--text);
+      font-family:'Nunito',sans-serif; font-weight:800; font-size:.9rem;
+    }
+    .quick-btn:hover { border-color:var(--border-hi); transform:translateY(-2px); }
+    .quick-btn:active { transform:scale(0.97); }
+    .quick-btn .qb-icon { font-size:1.6rem; display:block; margin-bottom:4px; }
+    .quick-btn .qb-cost { font-size:.72rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
+    .quick-btn.btn-feed   { border-color:rgba(251,146,60,.4); }
+    .quick-btn.btn-play   { border-color:rgba(167,139,250,.4); }
+    .quick-btn.btn-rest   { border-color:rgba(96,165,250,.4); }
+    .quick-btn.btn-clean  { border-color:rgba(45,212,191,.4); }
+    .quick-btn.btn-vet    { border-color:rgba(52,211,153,.4); }
+    .quick-btn.btn-evo    { border-color:rgba(251,191,36,.4); background:linear-gradient(135deg,var(--card),#1e1800); }
+
+    .warning-banner {
+      background:#2a0a0a; border:2px solid var(--red); border-radius:14px;
+      padding:10px 16px; font-size:.9rem; font-weight:700; color:var(--red);
+      text-align:center; margin-bottom:8px; display:none;
+    }
+
+    /* Evolution ready glow */
+    .evo-ready-pulse { animation: evo-glow 1.5s ease-in-out infinite; }
+    @keyframes evo-glow {
+      0%,100% { box-shadow: 0 0 0 rgba(251,191,36,0); border-color: rgba(251,191,36,.4); }
+      50% { box-shadow: 0 0 20px rgba(251,191,36,.5); border-color: var(--yellow); }
+    }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="pet-hero">
+      <div class="pet-stage">
+        <div class="pet-display" id="petDisplay"></div>
+        <div class="action-anim" id="actionAnim"></div>
+      </div>
+      <div class="pet-name" id="petName"></div>
+      <div class="pet-evo-badge" id="evoBadge" onclick="location.href='evolution.html'">
+        ✨ <span id="evoStageName"></span>
+      </div>
+    </div>
+
+    <div class="card" style="padding:16px 20px">
+      <div id="xpSection" class="xp-section"></div>
+    </div>
+
+    <div class="warning-banner" id="warnBanner"></div>
+
+    <div class="mood-banner">
+      <div class="mood-dot" id="moodDot"></div>
+      <span id="moodLabel"></span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Stats</div>
+      <div id="statsContainer"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <div class="quick-actions">
+        <button class="quick-btn btn-feed"  id="feedBtn">
+          <span class="qb-icon">🍖</span> Feed
+          <div class="qb-cost">-$3 · +10 XP</div>
+        </button>
+        <button class="quick-btn btn-play"  id="playBtn">
+          <span class="qb-icon">🎾</span> Play
+          <div class="qb-cost">-10 energy · +8 XP</div>
+        </button>
+        <button class="quick-btn btn-rest"  id="restBtn">
+          <span class="qb-icon">💤</span> Rest
+          <div class="qb-cost">free · +3 XP</div>
+        </button>
+        <button class="quick-btn btn-clean" id="cleanBtn">
+          <span class="qb-icon">🛁</span> Clean
+          <div class="qb-cost">-$2 · +5 XP</div>
+        </button>
+        <button class="quick-btn btn-vet"   id="vetBtn">
+          <span class="qb-icon">🏥</span> Vet
+          <div class="qb-cost">-$15 · +15 XP</div>
+        </button>
+        <button class="quick-btn btn-evo"   id="evoBtn" onclick="location.href='evolution.html'">
+          <span class="qb-icon">✨</span> Evolve
+          <div class="qb-cost">View progress →</div>
+        </button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+      <div class="money-chip">💰 $<span id="moneyVal"></span></div>
+      <a href="earn.html" class="btn btn-sm btn-ghost">+ Earn Money</a>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <script>
+    let s = getState();
+
+    function renderXP(s) {
+      const stage = s.evoStage || 0;
+      const xp = s.xp || 0;
+      const el = document.getElementById('xpSection');
+      if (stage >= 2) {
+        el.innerHTML = `<div class="xp-maxed">👑 MAX EVOLUTION — ${xp} XP total</div>`;
+        return;
+      }
+      const nextThresh = EVO_THRESHOLDS[stage + 1];
+      const prevThresh = EVO_THRESHOLDS[stage];
+      const progress = xp - prevThresh;
+      const needed = nextThresh - prevThresh;
+      const pct = Math.min(100, (progress / needed) * 100);
+      const remaining = nextThresh - xp;
+      const nextEmoji = EVO_EMOJI[s.petType][stage + 1];
+      el.innerHTML = `
+        <div class="xp-header">
+          <span>XP Progress ✨</span>
+          <span>${xp} / ${nextThresh} XP — ${remaining} to evolve ${nextEmoji}</span>
+        </div>
+        <div class="xp-track"><div class="xp-fill" style="width:${pct}%"></div></div>
+      `;
+    }
+
+    function render() {
+      s = getState();
+      const evoEmoji = getEvoEmoji(s);
+      document.getElementById('petDisplay').textContent = evoEmoji;
+      document.getElementById('petName').textContent = s.petName;
+      document.getElementById('evoStageName').textContent = getEvoName(s);
+      renderStats('statsContainer', s);
+      document.getElementById('moneyVal').textContent = s.money;
+      renderXP(s);
+
+      const mood = getMood(s);
+      document.getElementById('moodLabel').textContent = mood.label;
+      document.getElementById('moodDot').style.background = mood.color;
+
+      const warn = document.getElementById('warnBanner');
+      if (s.health <= 20)      { warn.style.display='block'; warn.textContent='⚠️ Your pet is very sick! Visit the vet!'; }
+      else if (s.hunger >= 80) { warn.style.display='block'; warn.textContent='⚠️ Your pet is starving! Feed them now!'; }
+      else                     { warn.style.display='none'; }
+
+      // Glow evo button if ready
+      const toNext = xpToNextEvo(s);
+      const evoBtn = document.getElementById('evoBtn');
+      if (toNext !== null && toNext <= 0) {
+        evoBtn.classList.add('evo-ready-pulse');
+        evoBtn.querySelector('.qb-icon').textContent = '🌟';
+        evoBtn.querySelector('.qb-cost').textContent = 'Ready to evolve!';
+      }
+    }
+
+    function flash(emoji, cb) {
+      const a = document.getElementById('actionAnim');
+      a.textContent = emoji;
+      a.classList.add('show');
+      setTimeout(() => { a.classList.remove('show'); if(cb) cb(); }, 800);
+    }
+
+    function doAction(action) {
+      s = getState();
+      const anims = { feed:['🍖','🥩','🐟'], play:['🎾','⚽','🏐'], rest:['💤','😴','🌙'], clean:['🛁','✨','🫧'], vet:['💉','💊','🩺'] };
+      const pool = anims[action];
+      const emoji = pool[Math.floor(Math.random()*pool.length)];
+      let xpGain = 0;
+
+      if (action === 'feed') {
+        if (s.money < 3) { showToast('❌ Not enough money! ($3 needed)'); return; }
+        s.hunger = clamp(s.hunger - 20); s.happiness = clamp(s.happiness + 5);
+        s.money -= 3; s.totalExpenses += 3;
+        s.feedCount = (s.feedCount || 0) + 1;
+        logTransaction(s, 'spend', 3, 'Fed ' + s.petName, '🍖', 'feed');
+        xpGain = 10; showToast('🍖 Fed! Hunger -20, Happy +5 · +10 XP');
+      } else if (action === 'play') {
+        if (s.energy < 10) { showToast('😴 Too tired to play! Rest first.'); return; }
+        s.happiness = clamp(s.happiness + 15); s.energy = clamp(s.energy - 10); s.hunger = clamp(s.hunger + 8);
+        xpGain = 8; showToast('🎾 Played! Happy +15 · +8 XP');
+      } else if (action === 'rest') {
+        s.energy = clamp(s.energy + 25); s.hunger = clamp(s.hunger + 5);
+        xpGain = 3; showToast('💤 Rested! Energy +25 · +3 XP');
+      } else if (action === 'clean') {
+        if (s.money < 2) { showToast('❌ Not enough money! ($2 needed)'); return; }
+        s.health = clamp(s.health + 10); s.happiness = clamp(s.happiness + 5);
+        s.money -= 2; s.totalExpenses += 2;
+        logTransaction(s, 'spend', 2, 'Cleaned ' + s.petName, '🛁', 'clean');
+        xpGain = 5; showToast('🛁 Cleaned! Health +10 · +5 XP');
+      } else if (action === 'vet') {
+        if (s.money < 15) { showToast('❌ Not enough money! ($15 needed)'); return; }
+        s.health = 100; s.money -= 15; s.totalExpenses += 15;
+        logTransaction(s, 'spend', 15, 'Vet visit', '🏥', 'vet');
+        xpGain = 15; showToast('🏥 Vet visit! Health restored · +15 XP');
+      }
+
+      const didEvolve = addXP(s, xpGain);
+      const newBadges = checkAndAwardBadges(s);
+      saveState(s);
+
+      flash(emoji, () => {
+        render();
+        if (didEvolve) {
+          setTimeout(() => {
+            showToast('🌟 YOUR PET EVOLVED! Check Evolution! 🎉', 4000);
+          }, 500);
+        } else if (newBadges.length) {
+          setTimeout(() => showToast('🏆 New badge: ' + newBadges[0].label + '!', 3000), 600);
+        }
+      });
+    }
+
+    document.getElementById('feedBtn').addEventListener('click',  () => doAction('feed'));
+    document.getElementById('playBtn').addEventListener('click',  () => doAction('play'));
+    document.getElementById('restBtn').addEventListener('click',  () => doAction('rest'));
+    document.getElementById('cleanBtn').addEventListener('click', () => doAction('clean'));
+    document.getElementById('vetBtn').addEventListener('click',   () => doAction('vet'));
+
+    // Live tick re-render
+    window.addEventListener('petTick', () => render());
+
+    render();
+  </script>
+</body>
+</html>

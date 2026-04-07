@@ -1,0 +1,563 @@
+Pet Wonderland v2 — Code Explanation
+=====================================
+A plain-English walkthrough of every major code block in the project.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+shared.js  —  The Brain of the Game
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+shared.js is loaded first on every page. It sets up all the data
+structures, utility functions, and background processes the rest of
+the game depends on.
+
+───────────────────────────────────────────
+BLOCK 1: Pet Images & Emoji Tables
+───────────────────────────────────────────
+
+  const PET_IMAGES = { Dog: 'data:image/svg+xml;...', ... }
+  const PET_EMOJIS = { Dog:'🐶', Cat:'🐱', Dragon:'🐲' }
+  const EVO_EMOJI  = { Dog:['🐶','🐕','🦮'], ... }
+  const EVO_NAMES  = { Dog:['Puppy','Adult Dog','Alpha Wolf'], ... }
+
+These are simple lookup tables. For any given pet type (Dog, Cat,
+Dragon), you can get its emoji or evolution-stage name using the type
+as a key. EVO_EMOJI and EVO_NAMES are indexed by evoStage (0, 1, 2).
+
+  const EVO_THRESHOLDS = [0, 200, 600]
+
+This array defines the XP required to reach each evolution stage:
+  - Stage 0 starts at 0 XP
+  - Stage 1 unlocks at 200 XP
+  - Stage 2 unlocks at 600 XP
+
+───────────────────────────────────────────
+BLOCK 2: Badge Definitions (BADGE_DEFS)
+───────────────────────────────────────────
+
+  const BADGE_DEFS = {
+    careChampion: { emoji:'🏅', label:'...', desc:'...' },
+    ...
+  }
+
+A plain object keyed by badge ID. Each badge has an emoji, display
+name, and description. The actual unlock logic is NOT here — it's in
+checkAndAwardBadges() below. This object is only used for display.
+
+───────────────────────────────────────────
+BLOCK 3: getState() — Reading Save Data
+───────────────────────────────────────────
+
+  function getState() {
+    const raw = localStorage.getItem('pwState');
+    if (raw) return JSON.parse(raw);
+    // legacy migration ...
+    return null;
+  }
+
+Reads the game state from the browser's localStorage. The entire game
+state (stats, money, inventory, XP, badges, ledger — everything) is
+stored as a single JSON string under the key 'pwState'. If the key
+doesn't exist, it checks for older "legacy" individual keys and
+migrates them to the new format. Returns null if no save exists at all.
+
+───────────────────────────────────────────
+BLOCK 4: saveState(s) — Writing Save Data
+───────────────────────────────────────────
+
+  function saveState(s) {
+    s.lastSaved = Date.now();
+    localStorage.setItem('pwState', JSON.stringify(s));
+    localStorage.setItem('petName', s.petName);
+  }
+
+Converts the state object to a JSON string and writes it to
+localStorage. Also stores petName separately because nav.js uses it
+as a quick check to see if a game is in progress (without having to
+parse the full JSON).
+
+───────────────────────────────────────────
+BLOCK 5: logTransaction() — Transaction Ledger
+───────────────────────────────────────────
+
+  function logTransaction(s, type, amount, label, icon, category) {
+    if (!s.ledger) s.ledger = [];
+    s.ledger.push({ type, amount, label, icon, category, ts: Date.now() });
+    if (s.ledger.length > 200) s.ledger = s.ledger.slice(-200);
+  }
+
+Appends a transaction record to the in-memory state object.
+  - type: 'earn' or 'spend'
+  - amount: dollar value (always positive)
+  - label: human-readable description ("Fed Buddy")
+  - icon: emoji for the UI
+  - category: 'feed', 'clean', 'vet', 'shop', 'minigame', etc.
+  - ts: Unix timestamp (milliseconds)
+
+The 200-entry cap prevents the save file from growing unboundedly.
+This function must be called BEFORE saveState(), so the ledger entry
+is included in the save.
+
+───────────────────────────────────────────
+BLOCK 6: clamp() — Stat Boundary Helper
+───────────────────────────────────────────
+
+  function clamp(v, lo=0, hi=100) {
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+Ensures a value stays within [lo, hi]. Used constantly when modifying
+stats to prevent them going below 0 or above 100. Default range is
+0–100, matching all four pet stats.
+
+───────────────────────────────────────────
+BLOCK 7: applyPassiveDecay() — Offline Stat Changes
+───────────────────────────────────────────
+
+  function applyPassiveDecay(s) {
+    const elapsed = Math.floor((Date.now() - s.lastTick) / 1000);
+    if (elapsed < 5) return;
+    s.hunger    += Math.floor(elapsed * 1/45);   // +1 every 45s
+    s.happiness -= Math.floor(elapsed * 1/90);   // -1 every 90s
+    s.energy    -= Math.floor(elapsed * 1/240);  // very slow
+    if (s.hunger >= 80) s.health -= Math.floor(elapsed * 1/180);
+    s.lastTick = Date.now();
+  }
+
+Called once when any page loads. It calculates how many seconds have
+passed since the last time the game was open (using the stored
+lastTick timestamp), then applies proportional stat changes. This
+makes stats decay even when the browser is closed — a classic
+Tamagotchi-style mechanic. Stat rates are tuned to be forgiving (e.g.
+hunger only rises 1 point per 45 real seconds).
+
+───────────────────────────────────────────
+BLOCK 8: startLiveTick() — Real-Time Stat Decay
+───────────────────────────────────────────
+
+  function startLiveTick() {
+    setInterval(() => {
+      const s = getState();
+      s.hunger    = clamp(s.hunger + 1);
+      s.happiness = clamp(s.happiness - 1);
+      if (s.hunger >= 80) s.health = clamp(s.health - 1);
+      s.lastTick = Date.now();
+      saveState(s);
+      window.dispatchEvent(new CustomEvent('petTick', { detail: s }));
+    }, 30000);
+  }
+
+Sets up a timer that fires every 30 seconds while the app is open.
+Each tick: hunger goes up 1, happiness goes down 1, and health drops
+if the pet is starving. After updating, it saves state and dispatches
+a 'petTick' CustomEvent. Any page that wants to auto-update its UI
+listens for this event:
+  window.addEventListener('petTick', () => render());
+
+───────────────────────────────────────────
+BLOCK 9: XP & Evolution Functions
+───────────────────────────────────────────
+
+  function addXP(s, amount) — Adds XP and checks if a new evo stage
+    was reached. Returns true if the pet just evolved.
+
+  function calcEvoStage(xp) — Given an XP value, returns which stage
+    (0, 1, or 2) the pet should be at.
+
+  function getEvoEmoji(s) — Returns the correct emoji for the current
+    stage and pet type.
+
+  function getEvoName(s) — Returns the evolution stage name.
+
+  function xpToNextEvo(s) — Returns how many XP remain until the next
+    evolution, or null if at max stage.
+
+───────────────────────────────────────────
+BLOCK 10: getMood() — Mood Banner Logic
+───────────────────────────────────────────
+
+  function getMood(s) {
+    if (s.health <= 20) return { label:'😷 Sick…', color:'#f87171' };
+    if (s.hunger >= 80) return { label:'😰 Starving!', ... };
+    ...
+  }
+
+Checks the pet's stats in priority order (worst conditions first) and
+returns a label + color for the mood banner. The color is applied
+directly to a dot element via inline style.
+
+───────────────────────────────────────────
+BLOCK 11: renderStats() — Stat Bars
+───────────────────────────────────────────
+
+  function renderStats(containerId, s) { ... }
+
+Writes four stat-bar rows into a given container element. Each row
+consists of a label, a bar track with a colored fill, and a numeric
+value. Fill width is set as a percentage (the stat value out of 100).
+Danger conditions (hunger > 70, or health/happiness/energy < 30) turn
+the bar red as a visual warning.
+
+───────────────────────────────────────────
+BLOCK 12: showToast() — Notification Toast
+───────────────────────────────────────────
+
+  function showToast(msg, duration=2200) { ... }
+
+Finds the #toast element on the page, sets its text, adds a 'show'
+CSS class (which slides it up via a CSS transition), then removes the
+class after `duration` ms. A timer reference is kept so rapid calls
+don't stack — each new toast cancels the previous dismiss timer.
+
+───────────────────────────────────────────
+BLOCK 13: checkAndAwardBadges() — Badge System
+───────────────────────────────────────────
+
+  function checkAndAwardBadges(s) {
+    const checks = [
+      ['careChampion', () => s.happiness >= 90 && s.health >= 90],
+      ['healthyPet',   () => s.health >= 100],
+      ...
+    ];
+    checks.forEach(([key, fn]) => {
+      if (!s.badges[key] && fn()) {
+        s.badges[key] = true;
+        newBadges.push(BADGE_DEFS[key]);
+      }
+    });
+    return newBadges;
+  }
+
+Called after every action that could trigger a badge. Iterates through
+all 12 badge conditions. If a badge isn't already earned AND its
+condition function returns true, it marks it earned and adds it to
+the return array. The caller (action handler) then shows a toast if
+any new badges were returned.
+
+───────────────────────────────────────────
+BLOCK 14: Initialization (IIFE at bottom)
+───────────────────────────────────────────
+
+  (function initShared() {
+    const s = getState();
+    if (s) {
+      applyPassiveDecay(s);
+      saveState(s);
+      startLiveTick();
+    }
+  })();
+
+An Immediately Invoked Function Expression that runs as soon as
+shared.js loads. It applies any offline stat decay (so stats are
+correct before any page renders), saves the updated state, and starts
+the live 30-second tick. Every game page benefits automatically.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+nav.js  —  Injected Navigation Bar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+nav.js is wrapped in an IIFE so its variables don't pollute the global
+scope. It runs immediately when included.
+
+  1. GUARD CHECK: If the current page is a game page and 'petName'
+     doesn't exist in localStorage, the user hasn't started a game —
+     redirect them to index.html.
+
+  2. CSS INJECTION: Creates a <style> tag and appends it to <head>
+     with nav-specific CSS (back button, evo pulse animation).
+
+  3. isEvoReady(): Quickly peeks at localStorage to check if the pet
+     has enough XP for its next evolution. Used to show a pulsing
+     yellow dot on the Evolve nav link.
+
+  4. NAV CREATION: Builds the <nav class="top-nav"> element with the
+     logo and all page links, highlighting the active page, and adding
+     the pulse dot if evolution is ready. Prepends it to <body> so it
+     appears above all page content.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+shared.css  —  Design System
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The CSS is organized into named sections:
+
+  :root — CSS custom properties (variables) for the entire color
+    palette (background layers, borders, accent colors). This dark
+    theme uses a deep navy/purple base (--bg: #0e0e1a).
+
+  .top-nav — Sticky navigation bar at the top. Flex row,
+    space-between, stays visible as you scroll.
+
+  .page — Centers and constrains content width to 480px with
+    comfortable padding. Used on every game page.
+
+  .card — A rounded dark rectangle with a border — the standard
+    content container. Used heavily throughout.
+
+  .btn / .btn-primary / .btn-yellow / etc. — Reusable button styles.
+    Each variant has a specific color, a "3D press" box-shadow, and
+    hover/active transition effects.
+
+  .stat-row / .stat-bar-track / .stat-bar-fill — The horizontal
+    progress bars used to visualize pet stats.
+
+  .money-chip — The pill-shaped money display shown in multiple
+    pages.
+
+  #toast — Fixed-position notification at the bottom of the screen.
+    Hidden by default (translateY(80px)), slides up with the .show
+    class.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+index.html  —  Start Screen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Floating background emojis: 20 <div> elements with random left
+  positions, font sizes, and animation delays are spawned via a loop.
+  They float upward using a CSS @keyframes animation.
+
+  Pet picker: Three cards with data-type attributes. Clicking one
+  removes 'selected' from all and adds it to the clicked card.
+  selectedType tracks the chosen pet.
+
+  Start button handler: Reads the name input (defaulting to 'Buddy'),
+  builds a fresh state object with default stats, calls saveState(),
+  then navigates to pet.html.
+
+  Continue note: Shown if 'pwState' or legacy 'hunger' key exists in
+  localStorage. Clicking it goes directly to pet.html.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pet.html  —  My Pet Page
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  render(): The main UI update function. Called on page load, after
+  every action, and on each petTick event. Reads state and sets the
+  pet emoji, name, evo badge, XP bar, mood, stats, and warning banner.
+
+  renderXP(s): Draws the XP progress bar below the pet. Calculates
+  percentage as (current XP - prev threshold) / (next threshold -
+  prev threshold). At max evo, shows a "MAX EVOLUTION" message.
+
+  flash(emoji, cb): Puts an emoji in the overlay <div>, adds the
+  'show' CSS class (which triggers a scale-up/fade animation), waits
+  800ms, then removes the class and calls the optional callback.
+
+  doAction(action): The unified action handler. Reads state, checks
+  preconditions (money, energy), applies stat changes, calls
+  logTransaction(), addXP(), and checkAndAwardBadges(), saves state,
+  triggers flash animation, then calls render().
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+actions.html  —  Actions Page
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Same logic as pet.html but with a richer animation system.
+
+  triggerAnimation(action, xpGain):
+    1. Picks a random emoji from the action's pool and puts it in the
+       #actionBurst element, then removes+re-adds the 'pop' class to
+       restart the CSS animation.
+    2. Similarly re-triggers 'bounce' or 'shake' on the pet emoji.
+    3. Creates a temporary <div class="ripple-ring"> element in the
+       stage container with a colored border, which expands via CSS
+       and self-removes after 750ms.
+    4. Creates a temporary <div class="xp-float"> that rises upward
+       showing "+N XP ✨" and self-removes after 1.4s.
+    5. Adds a 'card-pulse' class to the card that was clicked (CSS
+       box-shadow pulse animation).
+
+  The key technique for re-triggering CSS animations is:
+    element.classList.remove('myAnim');
+    void element.offsetWidth;  // forces reflow — resets the animation
+    element.classList.add('myAnim');
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+earn.html  —  Mini-Games
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  switchGame(g): Toggles active class on tabs and panels. Also resets
+  the relevant game so it's in a clean state when you switch to it.
+
+  collectMoney(amount, cb): Adds the earned amount to state, logs the
+  transaction, saves, updates the wallet display, shows a toast, and
+  calls the callback (usually a reset function).
+
+  WHACK-A-MOLE
+    Variables: moleHits, moleTimeLeft, moleActive (current hole index),
+    moleInterval (mole movement), moleCountdown (timer tick), moleRunning.
+
+    startMoleGame(): Resets all variables and UI, starts a mole movement
+    interval (700ms — a mole shows in a random hole every 700ms) and a
+    countdown interval (1s ticks).
+
+    showMole(): Clears the previous hole, picks a random new hole index,
+    adds 'has-mole' class and the 🐹 emoji to that hole.
+
+    Hole click handlers: If a click hits a hole with 'has-mole', it
+    swaps to 'hit' class, shows 💥, increments moleHits, and resets
+    the hole after 300ms.
+
+    endMoleGame(): Clears both intervals, reveals the result box.
+    Earnings = total hits (1 hit = $1).
+
+  REACTION GAME
+    Phases: 'idle' → 'waiting' (after Start) → 'go' (after random
+    delay) → 'done' (after tap).
+
+    A random delay of 2–6 seconds is set with setTimeout. If the player
+    taps during 'waiting', they get "Too Early." If they tap during 'go',
+    reaction time in ms is measured and score = max(0, floor(10 - ms/100)).
+    So 0ms = $10, 1000ms = $0.
+
+  MATH BLITZ
+    Each round generates a random math problem (+, -, ×) and four answer
+    choices (one correct, three "wrong" answers that are ±1–10 off).
+    The mathAnswer_ variable stores the correct answer. On click,
+    buttons are styled 'correct' or 'wrong', and the next question is
+    generated after a short delay. A 15-second countdown ends the game.
+
+  MEMORY MATCH
+    A 4×4 grid (16 cards = 8 pairs) is built from a shuffled array of
+    8 emoji × 2. Cards have .mem-front (emoji, hidden by default) and
+    .mem-back (❓, shown by default). Clicking a card adds 'flipped'
+    which swaps visibility via CSS.
+
+    memFlipped tracks the last 1–2 flipped (but unmatched) cards. When
+    2 are flipped, they're compared. If they match, both get 'matched'
+    (yellow border, pointer-events:none). If not, both un-flip after
+    900ms. calcMemReward() gives $12 minus 1 for every move over par=8.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+shop.html  —  Shop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SHOP_ITEMS array: Each item is an object with id, cat (category),
+  emoji, name, tier, desc, price, effects[], action type, and an
+  optional onBuy(s) function that mutates state when purchased.
+
+  STACKABLE array: Item IDs that can be bought multiple times
+  (consumables). All other items can only be owned once (inventory
+  prevents re-purchase).
+
+  renderShop(s): Generates HTML for the current category filter.
+  Determines card state (owned/equipped/can't afford) and the correct
+  button type (Buy/Equip/Owned).
+
+  buyItem(itemId): Deducts money, marks inventory, calls onBuy(s) to
+  apply the effect, auto-equips the first toy purchased, awards +5 XP
+  for any purchase, checks badges, saves, and re-renders.
+
+  equipToy(itemId): Sets s.equippedToy and s.playToy (the old toy
+  field, kept for compatibility) to the chosen toy ID.
+
+  Category tabs: A delegated event listener on #catTabs watches for
+  clicks on .cat-tab elements, updates the active class, updates
+  currentCat, and calls render().
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+evolution.html  —  Evolution
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  render(): Pulls current stage and XP, updates the hero section
+  (emoji + labels), draws the XP progress bar, renders the three-stage
+  chain with proper CSS classes (unlocked/current/locked), shows/hides
+  the "Ready to Evolve!" card, and renders the detailed stage cards.
+
+  spawnConfetti(): Creates 80 <div class="confetti-piece"> elements
+  with random left positions, durations, delays, colors, and shapes
+  (square or circle). They fall via a CSS @keyframes animation. All are
+  removed from the DOM after 4 seconds.
+
+  Evolve button handler: Verifies stage < 2 and XP meets threshold,
+  increments evoStage, checks badges (for 'evolved' / 'maxEvolved'),
+  saves, spawns confetti, shows toast, re-renders.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+badges.html  —  Badges
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  render(): Counts earned badges for the progress bar. Sorts badge
+  entries so earned ones come first. Builds one .badge-card <div> per
+  badge with 'earned' or 'locked' class controlling visual style.
+
+  The URL parameter ?newbadge=1 triggers spawnConfetti() — used for
+  future cross-page badge notifications.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+finance.html  —  Finance Dashboard (new in v2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  calcScores(s): Computes three 0–100 scores from state:
+    - earningScore: linear scale up to $200 earned = 100.
+    - savingsScore: ratio of current balance to total cash flow.
+    - spendScore:   inversely proportional to spend-to-earn ratio.
+    - overall: weighted average (35% earning, 35% savings, 30% spend).
+
+  getGrade(score): Maps overall score to a letter grade and title.
+
+  buildBlurb(s, scores): Generates 1–3 contextual finance tips based
+  on the player's specific weaknesses (low balance, overspending,
+  under-earning, etc.).
+
+  SVG ring animation:
+    Stroke-dasharray defines the full circumference of the ring.
+    Stroke-dashoffset starts at the full circumference (ring invisible),
+    then is animated to (circumference × (1 - score/100)) via a CSS
+    transition — revealing the colored arc proportionally to the score.
+    The formula: offset = circumference - (score/100) × circumference.
+    This is deferred with setTimeout(fn, 100) to ensure the DOM has
+    rendered before the transition fires.
+
+  makeMiniCircle(score, label, color): Generates an SVG ring element
+  as an HTML string. The inner score number is drawn with an SVG
+  <text> element.
+
+  buildBreakdown(ledger): Filters ledger entries by type='spend',
+  groups them by category, and returns an array sorted by total with
+  a bar-fill percentage relative to the highest category.
+
+  setTab(tab): Filters the ledger display and updates tab styling.
+
+  renderLedger(): Iterates the filtered ledger in reverse chronological
+  order (newest first) and builds .ledger-entry elements with icon,
+  label, timestamp, and color-coded amount.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Data Flow Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  User clicks action
+    ↓
+  Action handler (in pet.html / actions.html)
+    → Validates preconditions (money, energy)
+    → Modifies state object in memory
+    → Calls logTransaction(s, ...) to record the event
+    → Calls addXP(s, amount) — may set evoStage
+    → Calls checkAndAwardBadges(s) — may set badges
+    → Calls saveState(s) — writes to localStorage
+    → Calls render() — updates DOM from fresh state read
+    → Shows toast notification
+    ↓
+  Background: startLiveTick() fires every 30s
+    → Reads state, increments hunger, decrements happiness
+    → Saves state
+    → Fires 'petTick' CustomEvent
+    → Any listening page calls render() automatically
+    ↓
+  Next page load
+    → shared.js IIFE calls applyPassiveDecay()
+    → Calculates offline stat changes since lastTick
+    → Saves corrected state
+    → Page's render() draws current state

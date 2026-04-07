@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Pal — Badges</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:.95rem; }
+
+    .progress-bar-wrap {
+      background:var(--card); border:2px solid var(--border); border-radius:16px;
+      padding:16px 20px; margin-bottom:20px;
+    }
+    .progress-header {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+    }
+    .progress-label { font-weight:800; font-size:.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+    .progress-count { font-family:'Fredoka One',cursive; font-size:1.2rem; color:var(--yellow); }
+    .prog-track { height:12px; background:var(--bg2); border-radius:999px; overflow:hidden; }
+    .prog-fill  { height:100%; background:linear-gradient(90deg,var(--purple),var(--pink)); border-radius:999px; transition:width .6s cubic-bezier(.25,.8,.25,1); }
+
+    .badge-list { display:flex; flex-direction:column; gap:10px; }
+
+    .badge-card {
+      display:flex; align-items:center; gap:16px;
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:16px 20px;
+      transition:all .2s;
+      position:relative; overflow:hidden;
+    }
+    .badge-card.earned {
+      border-color:rgba(251,191,36,.5);
+      background:linear-gradient(135deg, var(--card) 0%, #1e1800 100%);
+    }
+    .badge-card.earned::after {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,var(--yellow),var(--orange));
+    }
+    .badge-card.locked { opacity:.5; }
+
+    .badge-icon-wrap {
+      width:56px; height:56px; flex-shrink:0;
+      border-radius:16px; display:flex; align-items:center; justify-content:center;
+      font-size:1.8rem;
+    }
+    .badge-card.earned  .badge-icon-wrap { background:rgba(251,191,36,.12); }
+    .badge-card.locked  .badge-icon-wrap { background:var(--bg2); filter:grayscale(1); }
+
+    .badge-info { flex:1; }
+    .badge-name { font-size:1rem; font-weight:800; margin-bottom:3px; }
+    .badge-card.locked .badge-name { color:var(--text-muted); }
+    .badge-desc { font-size:.8rem; font-weight:600; color:var(--text-muted); }
+
+    .badge-status {
+      flex-shrink:0;
+      font-size:.75rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:.5px;
+    }
+    .badge-card.earned .badge-status { color:var(--yellow); }
+    .badge-card.locked .badge-status { color:var(--text-muted); }
+
+    .confetti-wrap {
+      position:fixed; inset:0; pointer-events:none; z-index:9998; overflow:hidden;
+    }
+    .confetti-piece {
+      position:absolute; top:-20px;
+      width:8px; height:8px;
+      border-radius:2px;
+      animation:fall linear forwards;
+    }
+    @keyframes fall {
+      to { transform:translateY(110vh) rotate(720deg); opacity:0; }
+    }
+
+    .empty-state {
+      text-align:center; padding:40px 20px;
+      color:var(--text-muted);
+    }
+    .empty-icon { font-size:3rem; margin-bottom:12px; display:block; }
+    .empty-title { font-family:'Fredoka One',cursive; font-size:1.4rem; color:var(--text); margin-bottom:8px; }
+    .empty-desc  { font-size:.9rem; font-weight:600; }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">🏆 Badges</div>
+    <p class="page-sub">Unlock achievements as you play</p>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-header">
+        <span class="progress-label">Your Progress</span>
+        <span class="progress-count" id="progressCount">0 / 8</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="badge-list" id="badgeList"></div>
+  </div>
+
+  <div class="confetti-wrap" id="confettiWrap"></div>
+  <div id="toast"></div>
+  <script>
+    function render() {
+      const s = getState();
+      const total = Object.keys(BADGE_DEFS).length;
+      const earned = Object.values(s.badges).filter(Boolean).length;
+      document.getElementById('progressCount').textContent = earned + ' / ' + total;
+      document.getElementById('progFill').style.width = (earned / total * 100) + '%';
+
+      const list = document.getElementById('badgeList');
+      list.innerHTML = '';
+
+      // Earned first
+      const entries = Object.entries(BADGE_DEFS);
+      const sorted = [...entries].sort((a,b) => {
+        const ae = s.badges[a[0]] ? 1 : 0;
+        const be = s.badges[b[0]] ? 1 : 0;
+        return be - ae;
+      });
+
+      sorted.forEach(([key, def]) => {
+        const isEarned = !!s.badges[key];
+        const card = document.createElement('div');
+        card.className = 'badge-card ' + (isEarned ? 'earned' : 'locked');
+        card.innerHTML = `
+          <div class="badge-icon-wrap">${def.emoji}</div>
+          <div class="badge-info">
+            <div class="badge-name">${def.label}</div>
+            <div class="badge-desc">${def.desc}</div>
+          </div>
+          <div class="badge-status">${isEarned ? '✓ Earned' : '🔒 Locked'}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function spawnConfetti() {
+      const wrap = document.getElementById('confettiWrap');
+      const colors = ['#fbbf24','#a78bfa','#f472b6','#34d399','#60a5fa','#fb923c'];
+      for (let i = 0; i < 60; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        p.style.animationDelay = (Math.random() * .8) + 's';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.borderRadius = Math.random() > .5 ? '50%' : '2px';
+        wrap.appendChild(p);
+      }
+      setTimeout(() => wrap.innerHTML = '', 4000);
+    }
+
+    // Show confetti if newly earned badge was passed via URL
+    if (location.search.includes('newbadge=1')) spawnConfetti();
+
+    render();
+  </script>
+</body>
+</html>

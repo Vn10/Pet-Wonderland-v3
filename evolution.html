@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Evolution</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:.95rem; }
+
+    /* Current stage hero */
+    .evo-hero {
+      text-align:center; padding:28px 20px;
+      background:linear-gradient(135deg, var(--card) 0%, #1e1800 100%);
+      border:2px solid rgba(251,191,36,.3); border-radius:24px;
+      margin-bottom:20px; position:relative; overflow:hidden;
+    }
+    .evo-hero::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 50% 0%, rgba(251,191,36,.08), transparent 70%);
+    }
+    .evo-pet-emoji { font-size:6rem; line-height:1; display:block; margin-bottom:8px; animation:float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .evo-stage-label {
+      display:inline-block; background:var(--yellow); color:#1a0f00;
+      font-family:'Fredoka One',cursive; font-size:1rem; letter-spacing:1px;
+      border-radius:999px; padding:4px 16px; margin-bottom:6px;
+    }
+    .evo-pet-name { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); }
+    .evo-stage-name { font-size:.9rem; font-weight:800; color:var(--yellow); margin-top:4px; }
+    .evo-xp-total { font-size:.78rem; font-weight:700; color:var(--text-muted); margin-top:6px; }
+
+    /* XP Progress */
+    .xp-card {
+      background:var(--card); border:2px solid var(--border); border-radius:20px;
+      padding:20px; margin-bottom:16px;
+    }
+    .xp-card-title {
+      font-family:'Fredoka One',cursive; font-size:.78rem; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;
+    }
+    .xp-bar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .xp-bar-label  { font-weight:800; font-size:.85rem; }
+    .xp-bar-val    { font-family:'Fredoka One',cursive; font-size:1.1rem; color:var(--yellow); }
+    .xp-track { height:18px; background:var(--bg2); border-radius:999px; overflow:hidden; margin-bottom:6px; }
+    .xp-fill  {
+      height:100%; border-radius:999px;
+      background:linear-gradient(90deg,var(--yellow),var(--orange));
+      transition:width .8s cubic-bezier(.25,.8,.25,1);
+      position:relative;
+    }
+    .xp-fill::after {
+      content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+      background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.25) 50%,transparent 100%);
+      animation:shimmer 2s infinite;
+    }
+    @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+    .xp-sub { font-size:.78rem; font-weight:700; color:var(--text-muted); text-align:right; }
+    .xp-maxed-banner {
+      text-align:center; padding:16px;
+      background:linear-gradient(135deg,#1a0f00,#2a200a);
+      border:2px solid var(--yellow); border-radius:16px;
+      font-family:'Fredoka One',cursive; font-size:1.3rem; color:var(--yellow);
+    }
+
+    /* Evolution chain */
+    .chain-title { font-family:'Fredoka One',cursive; font-size:.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; }
+    .evo-chain {
+      display:flex; align-items:stretch; gap:0; overflow:hidden;
+      border-radius:20px; border:2px solid var(--border);
+    }
+    .chain-stage {
+      flex:1; padding:18px 12px; text-align:center;
+      border-right:2px solid var(--border); cursor:default;
+      transition:background .2s; position:relative;
+    }
+    .chain-stage:last-child { border-right:none; }
+    .chain-stage.current {
+      background:linear-gradient(135deg,var(--card),#1e1800);
+    }
+    .chain-stage.unlocked { background:rgba(52,211,153,.05); }
+    .chain-stage.locked   { opacity:.45; }
+    .chain-emoji { font-size:2.4rem; display:block; margin-bottom:6px; }
+    .chain-name  { font-size:.78rem; font-weight:800; color:var(--text); }
+    .chain-xp    { font-size:.68rem; font-weight:700; color:var(--text-muted); margin-top:3px; }
+    .chain-badge {
+      position:absolute; top:-1px; left:50%; transform:translateX(-50%);
+      background:var(--yellow); color:#1a0f00;
+      font-size:.58rem; font-weight:900; text-transform:uppercase; letter-spacing:.5px;
+      border-radius:0 0 8px 8px; padding:2px 8px;
+    }
+    .chain-badge.green { background:var(--green); color:#001a0e; }
+
+    /* Evolution ready card */
+    .evo-ready-card {
+      background:linear-gradient(135deg,#1a0f00,#2a200a);
+      border:2px solid var(--yellow); border-radius:20px;
+      padding:24px 20px; margin:16px 0; text-align:center;
+      animation:evo-glow 1.5s ease-in-out infinite;
+    }
+    @keyframes evo-glow {
+      0%,100%{box-shadow:0 0 0 rgba(251,191,36,0)}
+      50%{box-shadow:0 0 30px rgba(251,191,36,.4)}
+    }
+    .ready-title { font-family:'Fredoka One',cursive; font-size:1.6rem; color:var(--yellow); margin-bottom:6px; }
+    .ready-sub   { font-size:.9rem; font-weight:700; color:#d4a520; margin-bottom:16px; }
+    .btn-evolve  {
+      display:block; width:100%; padding:18px;
+      background:var(--yellow); color:#1a0f00;
+      font-family:'Fredoka One',cursive; font-size:1.5rem; letter-spacing:1px;
+      border:none; border-radius:16px; cursor:pointer;
+      box-shadow:0 6px 0 #92400e; transition:transform .1s, box-shadow .1s;
+    }
+    .btn-evolve:hover  { transform:translateY(-2px); box-shadow:0 8px 0 #92400e; }
+    .btn-evolve:active { transform:translateY(4px);  box-shadow:0 2px 0 #92400e; }
+
+    /* How to earn XP */
+    .xp-sources { display:flex; flex-direction:column; gap:8px; }
+    .xp-source-row {
+      display:flex; align-items:center; gap:12px;
+      background:var(--bg2); border:1px solid var(--border); border-radius:14px;
+      padding:10px 14px;
+    }
+    .xp-source-icon { font-size:1.4rem; flex-shrink:0; width:32px; text-align:center; }
+    .xp-source-info { flex:1; }
+    .xp-source-action { font-size:.85rem; font-weight:800; }
+    .xp-source-detail { font-size:.72rem; font-weight:700; color:var(--text-muted); }
+    .xp-source-gain   { font-family:'Fredoka One',cursive; font-size:1rem; color:var(--yellow); flex-shrink:0; }
+
+    /* Evolution history */
+    .stage-card {
+      display:flex; align-items:center; gap:16px;
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:16px 20px; margin-bottom:10px;
+    }
+    .stage-card.achieved { border-color:rgba(52,211,153,.4); }
+    .stage-card.next-up  { border-color:rgba(251,191,36,.4); background:linear-gradient(135deg,var(--card),#1e1800); }
+    .stage-card.future   { opacity:.4; }
+    .sc-emoji { font-size:2.8rem; flex-shrink:0; width:56px; text-align:center; }
+    .sc-info  { flex:1; }
+    .sc-name  { font-size:1rem; font-weight:800; margin-bottom:3px; }
+    .sc-desc  { font-size:.78rem; font-weight:700; color:var(--text-muted); }
+    .sc-req   { font-size:.72rem; font-weight:800; color:var(--yellow); margin-top:4px; }
+    .sc-status { flex-shrink:0; font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; }
+    .sc-status.done { color:var(--green); }
+    .sc-status.next { color:var(--yellow); }
+    .sc-status.lock { color:var(--text-muted); }
+
+    /* Confetti */
+    .confetti-wrap { position:fixed; inset:0; pointer-events:none; z-index:9998; overflow:hidden; }
+    .confetti-piece {
+      position:absolute; top:-20px; width:8px; height:8px; border-radius:2px;
+      animation:fall linear forwards;
+    }
+    @keyframes fall { to{transform:translateY(110vh) rotate(720deg);opacity:0} }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">✨ Evolution</div>
+    <p class="page-sub">Grow your pet through stages</p>
+
+    <!-- Current form hero -->
+    <div class="evo-hero">
+      <span class="evo-pet-emoji" id="heroPetEmoji"></span>
+      <div class="evo-stage-label" id="heroStageLabel"></div>
+      <div class="evo-pet-name" id="heroPetName"></div>
+      <div class="evo-stage-name" id="heroStageName"></div>
+      <div class="evo-xp-total" id="heroXpTotal"></div>
+    </div>
+
+    <!-- XP Progress -->
+    <div class="xp-card" id="xpCard">
+      <div class="xp-card-title">📊 XP Progress</div>
+      <div id="xpProgressArea"></div>
+    </div>
+
+    <!-- Evolution chain -->
+    <div class="card" style="padding:20px">
+      <div class="chain-title">🔗 Evolution Chain</div>
+      <div class="evo-chain" id="evoChain"></div>
+    </div>
+
+    <!-- Evolution ready button (shown when eligible) -->
+    <div id="evoReadyCard" style="display:none" class="evo-ready-card">
+      <div class="ready-title">🌟 Ready to Evolve!</div>
+      <div class="ready-sub" id="evoReadyDesc"></div>
+      <button class="btn-evolve" id="evolveBtn">✨ Evolve Now!</button>
+    </div>
+
+    <!-- Detailed stage cards -->
+    <div class="card" style="padding:20px">
+      <div class="chain-title">📖 Stages</div>
+      <div id="stageCards"></div>
+    </div>
+
+    <!-- XP Sources -->
+    <div class="card" style="padding:20px">
+      <div class="chain-title">⚡ How to Earn XP</div>
+      <div class="xp-sources">
+        <div class="xp-source-row"><div class="xp-source-icon">🍖</div><div class="xp-source-info"><div class="xp-source-action">Feed</div><div class="xp-source-detail">Reduce hunger & boost happiness</div></div><div class="xp-source-gain">+10 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">🎾</div><div class="xp-source-info"><div class="xp-source-action">Play</div><div class="xp-source-detail">Boost happiness</div></div><div class="xp-source-gain">+8 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">🛁</div><div class="xp-source-info"><div class="xp-source-action">Clean</div><div class="xp-source-detail">Improve health</div></div><div class="xp-source-gain">+5 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">🏥</div><div class="xp-source-info"><div class="xp-source-action">Vet Visit</div><div class="xp-source-detail">Full health restore</div></div><div class="xp-source-gain">+15 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">💤</div><div class="xp-source-info"><div class="xp-source-action">Rest</div><div class="xp-source-detail">Restore energy</div></div><div class="xp-source-gain">+3 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">🛒</div><div class="xp-source-info"><div class="xp-source-action">Buy Shop Items</div><div class="xp-source-detail">Any shop purchase</div></div><div class="xp-source-gain">+5 XP</div></div>
+        <div class="xp-source-row"><div class="xp-source-icon">💰</div><div class="xp-source-info"><div class="xp-source-action">Mini-games</div><div class="xp-source-detail">Per dollar earned</div></div><div class="xp-source-gain">+1 XP</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="confetti-wrap" id="confettiWrap"></div>
+  <div id="toast"></div>
+
+  <script>
+    function render() {
+      const s = getState();
+      const stage = s.evoStage || 0;
+      const xp = s.xp || 0;
+      const emojis = EVO_EMOJI[s.petType] || EVO_EMOJI.Cat;
+      const names  = EVO_NAMES[s.petType]  || EVO_NAMES.Cat;
+
+      // Hero
+      document.getElementById('heroPetEmoji').textContent = emojis[stage];
+      document.getElementById('heroStageLabel').textContent = 'Stage ' + (stage + 1);
+      document.getElementById('heroPetName').textContent = s.petName;
+      document.getElementById('heroStageName').textContent = names[stage];
+      document.getElementById('heroXpTotal').textContent = xp + ' total XP earned';
+
+      // XP progress bar
+      const xpArea = document.getElementById('xpProgressArea');
+      if (stage >= 2) {
+        xpArea.innerHTML = `<div class="xp-maxed-banner">👑 Maximum Evolution Reached! ${xp} XP</div>`;
+      } else {
+        const next = EVO_THRESHOLDS[stage + 1];
+        const prev = EVO_THRESHOLDS[stage];
+        const pct  = Math.min(100, ((xp - prev) / (next - prev)) * 100);
+        xpArea.innerHTML = `
+          <div class="xp-bar-header">
+            <span class="xp-bar-label">To Stage ${stage + 2}: ${names[stage + 1]} ${emojis[stage + 1]}</span>
+            <span class="xp-bar-val">${xp} / ${next}</span>
+          </div>
+          <div class="xp-track"><div class="xp-fill" style="width:${pct.toFixed(1)}%"></div></div>
+          <div class="xp-sub">${next - xp} XP remaining</div>
+        `;
+      }
+
+      // Chain
+      const chain = document.getElementById('evoChain');
+      chain.innerHTML = emojis.map((em, i) => {
+        const cls = i < stage ? 'unlocked' : i === stage ? 'current' : 'locked';
+        const badge = i < stage ? '<div class="chain-badge green">✓</div>' :
+                      i === stage ? '<div class="chain-badge">Now</div>' : '';
+        const xpReq = i === 0 ? 'Start' : EVO_THRESHOLDS[i] + ' XP';
+        return `<div class="chain-stage ${cls}">
+          ${badge}
+          <span class="chain-emoji">${em}</span>
+          <div class="chain-name">${names[i]}</div>
+          <div class="chain-xp">${xpReq}</div>
+        </div>`;
+      }).join('');
+
+      // Evolution ready card
+      const readyCard = document.getElementById('evoReadyCard');
+      if (stage < 2 && xp >= EVO_THRESHOLDS[stage + 1]) {
+        readyCard.style.display = 'block';
+        document.getElementById('evoReadyDesc').textContent =
+          `${s.petName} is ready to evolve into ${names[stage + 1]}! ${emojis[stage + 1]}`;
+      } else {
+        readyCard.style.display = 'none';
+      }
+
+      // Stage detail cards
+      const stageCardsEl = document.getElementById('stageCards');
+      const stageData = [
+        { req:'Start', desc:'Your pet\'s first form. Innocent and curious, just getting started on their journey.' },
+        { req:'200 XP', desc:'Fully grown and more powerful. New abilities and a stronger bond with you.' },
+        { req:'600 XP', desc:'The ultimate form! Legendary status — only the most devoted trainers reach this.' },
+      ];
+      stageCardsEl.innerHTML = emojis.map((em, i) => {
+        let cls = 'stage-card future', statusTxt = '🔒 Locked', statusCls = 'lock';
+        if (i < stage)       { cls='stage-card achieved'; statusTxt='✓ Achieved'; statusCls='done'; }
+        else if (i === stage) { cls='stage-card next-up';  statusTxt='★ Current';  statusCls='next'; }
+        return `<div class="${cls}">
+          <div class="sc-emoji">${em}</div>
+          <div class="sc-info">
+            <div class="sc-name">${names[i]}</div>
+            <div class="sc-desc">${stageData[i].desc}</div>
+            <div class="sc-req">Stage ${i+1} — Requires: ${stageData[i].req}</div>
+          </div>
+          <div class="sc-status ${statusCls}">${statusTxt}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function spawnConfetti() {
+      const wrap = document.getElementById('confettiWrap');
+      const colors = ['#fbbf24','#a78bfa','#f472b6','#34d399','#60a5fa','#fb923c'];
+      for (let i = 0; i < 80; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        p.style.animationDelay = (Math.random() * 1) + 's';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.borderRadius = Math.random() > .5 ? '50%' : '2px';
+        wrap.appendChild(p);
+      }
+      setTimeout(() => wrap.innerHTML = '', 4000);
+    }
+
+    document.getElementById('evolveBtn').addEventListener('click', () => {
+      const s = getState();
+      const stage = s.evoStage || 0;
+      if (stage >= 2) return;
+      if ((s.xp || 0) < EVO_THRESHOLDS[stage + 1]) return;
+
+      s.evoStage = stage + 1;
+      const newBadges = checkAndAwardBadges(s);
+      saveState(s);
+      spawnConfetti();
+
+      const names  = EVO_NAMES[s.petType]  || EVO_NAMES.Cat;
+      const emojis = EVO_EMOJI[s.petType]  || EVO_EMOJI.Cat;
+      showToast(`🌟 ${s.petName} evolved into ${names[s.evoStage]}! ${emojis[s.evoStage]}`, 4000);
+
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

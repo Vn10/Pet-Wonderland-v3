@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — How to Play</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:24px; font-size:.95rem; }
+
+    .step-card {
+      background:var(--card); border:2px solid var(--border); border-radius:20px;
+      padding:20px; margin-bottom:14px;
+      display:flex; gap:16px; align-items:flex-start;
+    }
+    .step-num {
+      font-family:'Fredoka One',cursive; font-size:2rem; color:var(--yellow);
+      line-height:1; flex-shrink:0; width:36px;
+    }
+    .step-content {}
+    .step-title { font-size:1rem; font-weight:800; margin-bottom:6px; }
+    .step-desc  { font-size:.88rem; font-weight:600; color:var(--text-muted); line-height:1.6; }
+
+    .tip-box {
+      background:#1a1000; border:2px solid rgba(251,191,36,.4); border-radius:16px;
+      padding:16px 20px; margin-bottom:14px;
+    }
+    .tip-label { font-size:.72rem; font-weight:900; text-transform:uppercase; letter-spacing:1px; color:var(--yellow); margin-bottom:6px; }
+    .tip-text  { font-size:.88rem; font-weight:600; color:#d4a520; line-height:1.6; }
+
+    .stat-explain { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+    .stat-line { display:flex; align-items:center; gap:10px; font-size:.85rem; font-weight:700; }
+    .stat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">❓ How to Play</div>
+    <p class="page-sub">Everything you need to know</p>
+
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Create your pet</div>
+        <div class="step-desc">Choose a Dog, Cat, or Dragon and give them a name. Your pet starts with balanced stats and $150.</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Watch the stats</div>
+        <div class="step-desc">Your pet has four key stats. Keep them healthy!
+          <div class="stat-explain">
+            <div class="stat-line"><div class="stat-dot" style="background:#f87171"></div><strong>Hunger</strong> — goes up over time. Feed your pet to reduce it.</div>
+            <div class="stat-line"><div class="stat-dot" style="background:#a78bfa"></div><strong>Happiness</strong> — keep it high by playing and cleaning.</div>
+            <div class="stat-line"><div class="stat-dot" style="background:#60a5fa"></div><strong>Energy</strong> — depleted by playing. Restore by resting.</div>
+            <div class="stat-line"><div class="stat-dot" style="background:#34d399"></div><strong>Health</strong> — drops if you neglect your pet. Vet restores it fully.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Earn money</div>
+        <div class="step-desc">Visit the <strong>Earn</strong> tab to play mini-games. Whack moles for $1 per hit, or test your reaction speed for up to $10 per round.</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Buy toys in the Shop</div>
+        <div class="step-desc">Better toys give your pet more happiness when you play. Upgrade from the Rubber Duck ($15) → Chew Bone ($75) → Ultra Ball ($200).</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Unlock Badges</div>
+        <div class="step-desc">There are 8 badges to collect. Reach milestones like max health, high happiness, or earning lots of money to unlock them all!</div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-label">💡 Pro Tips</div>
+      <div class="tip-text">
+        • Rest is free — use it often to save money<br>
+        • Clean regularly to keep health up without vet bills<br>
+        • The reaction game rewards $1–10 depending on speed<br>
+        • Mole hits = direct dollars, so keep clicking!
+      </div>
+    </div>
+
+    <a href="index.html" class="btn btn-primary btn-full">Start Playing 🚀</a>
+  </div>
+</body>
+</html>

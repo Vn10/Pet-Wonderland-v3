@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Start</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    body { overflow-x: hidden; }
+    .floaties { position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0; }
+    .floaty { position:absolute;opacity:.06;animation:floatup linear infinite; }
+    @keyframes floatup { 0%{transform:translateY(105vh) rotate(0deg)} 100%{transform:translateY(-120px) rotate(360deg)} }
+
+    .hero {
+      text-align: center;
+      padding: 56px 20px 28px;
+      position: relative; z-index: 1;
+    }
+    .logo {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(3.2rem, 12vw, 5.5rem);
+      color: var(--yellow);
+      text-shadow: 5px 5px 0 #92400e;
+      line-height: 1;
+      margin-bottom: 10px;
+      animation: pop 0.7s cubic-bezier(.175,.885,.32,1.4) both;
+    }
+    .tagline {
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 48px;
+      animation: fadeup 0.5s 0.3s both;
+    }
+    @keyframes pop    { from{opacity:0;transform:scale(.5) translateY(-10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes fadeup { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+    .pet-picker {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 32px;
+      animation: fadeup 0.5s 0.4s both;
+    }
+    .pet-option {
+      background: var(--card);
+      border: 3px solid var(--border);
+      border-radius: 22px;
+      padding: 18px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      width: 108px;
+      position: relative;
+      user-select: none;
+    }
+    .pet-option:hover { transform: translateY(-4px); border-color: var(--border-hi); }
+    .pet-option.selected {
+      border-color: var(--yellow);
+      background: #1e1800;
+      transform: translateY(-6px) scale(1.06);
+      box-shadow: 0 10px 30px rgba(251,191,36,.25);
+    }
+    .pet-option.selected::after {
+      content: '✓';
+      position: absolute; top: -10px; right: -10px;
+      background: var(--yellow); color: #1a0f00;
+      width: 26px; height: 26px; border-radius: 50%;
+      font-weight: 900; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .pet-emoji { font-size: 3rem; display: block; margin-bottom: 8px; }
+    .pet-label { font-size: 0.82rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .evo-preview {
+      font-size: 0.7rem; font-weight: 700; color: var(--yellow);
+      margin-top: 4px;
+    }
+
+    .form-section {
+      position: relative; z-index: 1;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 0 16px;
+      animation: fadeup 0.5s 0.5s both;
+    }
+    .field-wrap { margin-bottom: 20px; }
+    .field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .field-input {
+      width: 100%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      color: var(--text);
+      padding: 15px 20px;
+      font-size: 1.1rem;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .field-input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(167,139,250,.2); }
+    .field-input::placeholder { color: var(--border-hi); font-weight: 600; }
+
+    .cta-wrap { display: flex; flex-direction: column; gap: 10px; animation: fadeup 0.5s 0.65s both; }
+    .btn-launch {
+      width: 100%;
+      padding: 18px;
+      background: var(--yellow);
+      color: #1a0f00;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 7px 0 #92400e;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn-launch:hover { transform: translateY(-2px); box-shadow: 0 9px 0 #92400e; }
+    .btn-launch:active { transform: translateY(5px); box-shadow: 0 2px 0 #92400e; }
+
+    .btn-howto {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-howto:hover { border-color: var(--purple); color: var(--purple); }
+
+    .continue-note {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      animation: fadeup 0.5s 0.75s both;
+    }
+    .continue-link {
+      color: var(--purple);
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .evo-teaser {
+      background: linear-gradient(135deg, #1a0f00, #1e1800);
+      border: 2px solid rgba(251,191,36,.3);
+      border-radius: 18px;
+      padding: 14px 18px;
+      margin: 0 16px 20px;
+      text-align: center;
+      animation: fadeup 0.5s 0.8s both;
+      position: relative; z-index: 1;
+    }
+    .evo-teaser-title { font-family:'Fredoka One',cursive; font-size:1rem; color:var(--yellow); margin-bottom:4px; }
+    .evo-chain { display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.4rem; }
+    .evo-arrow { font-size:.8rem; color:var(--yellow); opacity:.6; }
+    .evo-stage-item { text-align:center; }
+    .evo-stage-lbl { font-size:.6rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; display:block; margin-top:2px; }
+  </style>
+</head>
+<body>
+  <div class="floaties" id="floaties"></div>
+
+  <div class="hero">
+    <div class="logo">🐾 Pet Wonderland</div>
+    <p class="tagline">Raise, evolve & care for your companion!</p>
+
+    <div class="pet-picker" id="petPicker">
+      <div class="pet-option" data-type="Dog">
+        <span class="pet-emoji">🐶</span>
+        <span class="pet-label">Dog</span>
+        <div class="evo-preview">→ 🐕 → 🦮</div>
+      </div>
+      <div class="pet-option selected" data-type="Cat">
+        <span class="pet-emoji">🐱</span>
+        <span class="pet-label">Cat</span>
+        <div class="evo-preview">→ 🐈 → 🦁</div>
+      </div>
+      <div class="pet-option" data-type="Dragon">
+        <span class="pet-emoji">🐲</span>
+        <span class="pet-label">Dragon</span>
+        <div class="evo-preview">→ 🐉 → 👑🐉</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="evo-teaser">
+    <div class="evo-teaser-title">✨ Evolution System</div>
+    <div class="evo-chain">
+      <div class="evo-stage-item"><span>🥚</span><span class="evo-stage-lbl">Baby</span></div>
+      <span class="evo-arrow">▶</span>
+      <div class="evo-stage-item"><span>🌟</span><span class="evo-stage-lbl">200 XP</span></div>
+      <span class="evo-arrow">▶</span>
+      <div class="evo-stage-item"><span>👑</span><span class="evo-stage-lbl">600 XP</span></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="field-wrap">
+      <label class="field-label" for="nameInput">Give your pet a name</label>
+      <input class="field-input" type="text" id="nameInput" placeholder="e.g. Biscuit, Spark, Nova…" maxlength="20"/>
+    </div>
+
+    <div class="cta-wrap">
+      <button class="btn-launch" id="startBtn">Let's Go! 🚀</button>
+      <button class="btn-howto" onclick="location.href='instructions.html'">❓ How to Play</button>
+    </div>
+
+    <p class="continue-note" id="continueNote" style="display:none">
+      Already playing? <span class="continue-link" id="continueLink">Continue your game →</span>
+    </p>
+  </div>
+
+  <div id="toast"></div>
+  <script src="shared.js"></script>
+  <script>
+    const emojis = ['🐾','⭐','💎','🎮','❤️','🌟','✨','🎯','🍖','💤','🎁','🏆'];
+    const floaties = document.getElementById('floaties');
+    for (let i = 0; i < 20; i++) {
+      const d = document.createElement('div');
+      d.className = 'floaty';
+      d.textContent = emojis[i % emojis.length];
+      d.style.left = Math.random() * 100 + '%';
+      d.style.animationDuration = (9 + Math.random() * 14) + 's';
+      d.style.animationDelay = '-' + (Math.random() * 14) + 's';
+      d.style.fontSize = (1 + Math.random() * 2.5) + 'rem';
+      floaties.appendChild(d);
+    }
+
+    if (localStorage.getItem('pwState') || localStorage.getItem('hunger')) {
+      document.getElementById('continueNote').style.display = 'block';
+      const s = getState();
+      if (s) {
+        document.getElementById('nameInput').value = s.petName;
+        document.querySelectorAll('.pet-option').forEach(o => {
+          o.classList.toggle('selected', o.dataset.type === s.petType);
+        });
+        selectedType = s.petType;
+      }
+    }
+    document.getElementById('continueLink')?.addEventListener('click', () => { location.href = 'pet.html'; });
+
+    let selectedType = 'Cat';
+    document.querySelectorAll('.pet-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.pet-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        selectedType = opt.dataset.type;
+      });
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value.trim() || 'Buddy';
+      const s = {
+        petName: name,
+        petType: selectedType,
+        hunger: 50, happiness: 50, energy: 50, health: 50,
+        money: 150, totalExpenses: 0, totalEarned: 0,
+        sBought: false, bBought: false, cBought: false,
+        playToy: 'none',
+        badges: {},
+        xp: 0,
+        evoStage: 0,
+        feedCount: 0,
+        lastTick: Date.now(),
+        inventory: {},
+      };
+      saveState(s);
+      location.href = 'pet.html';
+    });
+  </script>
+</body>
+</html>

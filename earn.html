@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Earn Money</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:.95rem; }
+
+    .wallet-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--card); border:2px solid var(--border); border-radius:16px;
+      padding:14px 20px; margin-bottom:20px;
+    }
+    .wallet-label { font-size:.8rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+
+    /* ── Game selector tabs ── */
+    .game-tabs { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:20px; }
+    .game-tab {
+      padding:10px 6px; background:var(--card); border:2px solid var(--border);
+      border-radius:16px; cursor:pointer; text-align:center;
+      font-family:'Nunito',sans-serif; font-weight:800; font-size:.78rem; color:var(--text-muted);
+      transition:all .18s;
+    }
+    .game-tab:hover { border-color:var(--border-hi); color:var(--text); }
+    .game-tab.active { background:var(--card2); border-color:var(--purple); color:var(--purple); }
+    .game-tab .tab-icon { font-size:1.3rem; display:block; margin-bottom:3px; }
+
+    /* ── Game panel ── */
+    .game-panel { display:none; }
+    .game-panel.active { display:block; }
+
+    /* ── Shared result box ── */
+    .result-box {
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:20px; text-align:center; margin-top:12px; display:none;
+    }
+    .result-big { font-family:'Fredoka One',cursive; font-size:2.8rem; color:var(--yellow); text-shadow:3px 3px 0 #92400e; margin-bottom:6px; }
+    .result-sub { color:var(--text-muted); font-weight:700; margin-bottom:14px; font-size:.9rem; }
+    .result-btns { display:flex; flex-direction:column; gap:8px; }
+
+    /* ── Mole game ── */
+    .mole-hud { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .hud-stat { background:var(--card); border:2px solid var(--border); border-radius:14px; padding:10px 18px; text-align:center; }
+    .hud-val { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--yellow); line-height:1; }
+    .hud-lbl { font-size:.72rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+    .timer-bar-track { flex:1; height:10px; background:var(--bg2); border-radius:999px; margin:0 12px; overflow:hidden; }
+    .timer-bar-fill  { height:100%; background:var(--green); border-radius:999px; transition:width .9s linear; }
+    .mole-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0; }
+    .mole-hole {
+      aspect-ratio:1; background:var(--bg2); border:3px solid var(--border);
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:2.4rem; cursor:pointer; transition:all .1s;
+      user-select:none; position:relative; overflow:hidden;
+    }
+    .mole-hole.has-mole { border-color:var(--orange); background:var(--card); box-shadow:0 0 20px rgba(251,146,60,.3); animation:popin .15s cubic-bezier(.175,.885,.32,1.4); }
+    .mole-hole.has-mole:hover { transform:scale(1.05); }
+    .mole-hole.hit { animation:whack .3s ease; border-color:var(--green); }
+    @keyframes popin { from{transform:scale(.3) translateY(20px)} to{transform:scale(1) translateY(0)} }
+    @keyframes whack { 0%{transform:scale(1)} 30%{transform:scale(.7) rotate(-10deg)} 100%{transform:scale(1)} }
+    .mole-emoji { pointer-events:none; }
+
+    /* ── Reaction game ── */
+    .reaction-arena {
+      aspect-ratio:4/3; max-height:260px;
+      background:var(--card); border:3px solid var(--border); border-radius:24px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:12px; cursor:pointer; transition:all .2s; overflow:hidden; position:relative;
+    }
+    .reaction-arena.waiting { border-color:var(--border); }
+    .reaction-arena.go      { border-color:var(--green); background:#041a0e; box-shadow:0 0 40px rgba(52,211,153,.3); animation:pulse-green .3s; }
+    .reaction-arena.result  { border-color:var(--purple); }
+    @keyframes pulse-green { from{box-shadow:0 0 0 rgba(52,211,153,.8)} to{box-shadow:0 0 60px rgba(52,211,153,.2)} }
+    .reaction-status { font-family:'Fredoka One',cursive; font-size:2.2rem; text-align:center; pointer-events:none; }
+    .reaction-sub    { font-size:.9rem; font-weight:700; color:var(--text-muted); pointer-events:none; }
+    .reaction-timer-visual { font-size:4rem; line-height:1; pointer-events:none; animation:tick .8s infinite; }
+    @keyframes tick { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+    .reaction-score-display {
+      background:var(--card); border:2px solid var(--border); border-radius:16px;
+      padding:14px 20px; text-align:center; margin-top:12px; display:none;
+    }
+    .score-big { font-family:'Fredoka One',cursive; font-size:2.2rem; color:var(--green); }
+    .score-sub { font-size:.85rem; font-weight:700; color:var(--text-muted); margin-top:4px; }
+
+    /* ── Math Blitz ── */
+    .math-hud { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .math-question {
+      background:var(--card); border:2px solid var(--border); border-radius:20px;
+      padding:28px 20px; text-align:center; margin-bottom:16px;
+    }
+    .math-q-text { font-family:'Fredoka One',cursive; font-size:2.6rem; color:var(--text); margin-bottom:6px; }
+    .math-q-sub  { font-size:.82rem; font-weight:700; color:var(--text-muted); }
+    .math-answers { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .math-ans-btn {
+      background:var(--card); border:2px solid var(--border); border-radius:16px;
+      padding:18px; font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--text);
+      cursor:pointer; transition:all .15s;
+    }
+    .math-ans-btn:hover { border-color:var(--border-hi); transform:translateY(-2px); }
+    .math-ans-btn.correct { border-color:var(--green); background:#041a0e; color:var(--green); animation:pop-correct .3s; }
+    .math-ans-btn.wrong   { border-color:var(--red);   background:#1a0404; color:var(--red);   animation:shake .3s; }
+    @keyframes pop-correct { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+    /* ── Memory Match ── */
+    .memory-hud { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .memory-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+    .mem-card {
+      aspect-ratio:1; background:var(--card2); border:2px solid var(--border);
+      border-radius:14px; display:flex; align-items:center; justify-content:center;
+      font-size:1.6rem; cursor:pointer; transition:all .2s;
+      user-select:none; position:relative; overflow:hidden;
+    }
+    .mem-card:hover:not(.flipped):not(.matched) { border-color:var(--border-hi); transform:scale(1.05); }
+    .mem-card .mem-front { display:none; }
+    .mem-card .mem-back  { display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:1.1rem; }
+    .mem-card.flipped .mem-front { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+    .mem-card.flipped .mem-back  { display:none; }
+    .mem-card.matched {
+      border-color:var(--yellow); background:rgba(251,191,36,.1);
+      animation:mem-match .3s ease;
+    }
+    @keyframes mem-match { 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
+    .mem-card.locked { pointer-events:none; }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">💰 Earn Money</div>
+    <p class="page-sub">Play mini-games to fund your pet</p>
+
+    <div class="wallet-bar">
+      <span class="wallet-label">Current Balance</span>
+      <div class="money-chip">💰 $<span id="moneyVal"></span></div>
+    </div>
+
+    <div class="game-tabs">
+      <button class="game-tab active" id="tabMole"     onclick="switchGame('mole')">    <span class="tab-icon">🐹</span>Whack-a-Mole</button>
+      <button class="game-tab"        id="tabReaction" onclick="switchGame('reaction')"><span class="tab-icon">⚡</span>Reaction</button>
+      <button class="game-tab"        id="tabMath"     onclick="switchGame('math')">    <span class="tab-icon">🧮</span>Math Blitz</button>
+      <button class="game-tab"        id="tabMemory"   onclick="switchGame('memory')">  <span class="tab-icon">🃏</span>Memory</button>
+    </div>
+
+    <!-- ══ MOLE GAME ══ -->
+    <div class="game-panel active" id="panelMole">
+      <div class="mole-hud">
+        <div class="hud-stat">
+          <div class="hud-val" id="moleHits">0</div>
+          <div class="hud-lbl">Hits</div>
+        </div>
+        <div class="timer-bar-track"><div class="timer-bar-fill" id="timerBar"></div></div>
+        <div class="hud-stat">
+          <div class="hud-val" id="moleTime">10</div>
+          <div class="hud-lbl">Secs</div>
+        </div>
+      </div>
+
+      <div class="mole-grid" id="moleGrid">
+        <div class="mole-hole" id="hole0"></div>
+        <div class="mole-hole" id="hole1"></div>
+        <div class="mole-hole" id="hole2"></div>
+        <div class="mole-hole" id="hole3"></div>
+        <div class="mole-hole" id="hole4"></div>
+        <div class="mole-hole" id="hole5"></div>
+      </div>
+
+      <div class="result-box" id="moleResult">
+        <div class="result-big" id="moleResultVal">0</div>
+        <div class="result-sub" id="moleResultSub"></div>
+        <div class="result-btns">
+          <button class="btn btn-yellow btn-full" id="moleCollect">Collect $<span id="moleCollectAmt"></span> 💰</button>
+          <button class="btn btn-ghost btn-full" onclick="startMoleGame()">▶ Play Again</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full mt-8" id="moleStartBtn" onclick="startMoleGame()">▶ Start Game</button>
+    </div>
+
+    <!-- ══ REACTION GAME ══ -->
+    <div class="game-panel" id="panelReaction">
+      <div class="reaction-arena waiting" id="reactionArena">
+        <div class="reaction-timer-visual" id="reactionEmoji">🕐</div>
+        <div class="reaction-status" id="reactionStatus">Wait for it…</div>
+        <div class="reaction-sub" id="reactionSub">Tap when you see GO!</div>
+      </div>
+
+      <div class="reaction-score-display" id="reactionScoreBox">
+        <div class="score-big">+$<span id="reactionEarned">0</span></div>
+        <div class="score-sub" id="reactionScoreSub"></div>
+      </div>
+
+      <div class="result-box" id="reactionResult">
+        <div class="result-big" id="reactionResultVal"></div>
+        <div class="result-sub" id="reactionResultSub"></div>
+        <div class="result-btns">
+          <button class="btn btn-yellow btn-full" id="reactionCollect" style="display:none">Collect $<span id="reactionCollectAmt"></span> 💰</button>
+          <button class="btn btn-ghost btn-full" onclick="resetReaction()">▶ Play Again</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full mt-8" id="reactionStartBtn" onclick="startReactionGame()">▶ Start Round</button>
+    </div>
+
+    <!-- ══ MATH BLITZ ══ -->
+    <div class="game-panel" id="panelMath">
+      <div class="math-hud">
+        <div class="hud-stat">
+          <div class="hud-val" id="mathScore">0</div>
+          <div class="hud-lbl">Correct</div>
+        </div>
+        <div class="timer-bar-track"><div class="timer-bar-fill" id="mathTimerBar"></div></div>
+        <div class="hud-stat">
+          <div class="hud-val" id="mathTime">15</div>
+          <div class="hud-lbl">Secs</div>
+        </div>
+      </div>
+
+      <div class="math-question" id="mathQuestionBox" style="display:none">
+        <div class="math-q-text" id="mathQText"></div>
+        <div class="math-q-sub">Pick the right answer!</div>
+      </div>
+
+      <div class="math-answers" id="mathAnswers" style="display:none">
+        <button class="math-ans-btn" id="mathA0" onclick="mathAnswer(0)"></button>
+        <button class="math-ans-btn" id="mathA1" onclick="mathAnswer(1)"></button>
+        <button class="math-ans-btn" id="mathA2" onclick="mathAnswer(2)"></button>
+        <button class="math-ans-btn" id="mathA3" onclick="mathAnswer(3)"></button>
+      </div>
+
+      <div class="result-box" id="mathResult">
+        <div class="result-big" id="mathResultVal"></div>
+        <div class="result-sub" id="mathResultSub"></div>
+        <div class="result-btns">
+          <button class="btn btn-yellow btn-full" id="mathCollect">Collect $<span id="mathCollectAmt"></span> 💰</button>
+          <button class="btn btn-ghost btn-full" onclick="startMathGame()">▶ Play Again</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full mt-8" id="mathStartBtn" onclick="startMathGame()">▶ Start Game</button>
+      <p style="text-align:center;margin-top:10px;font-size:.78rem;color:var(--text-muted);font-weight:700;">$1 per correct answer • 15 seconds</p>
+    </div>
+
+    <!-- ══ MEMORY MATCH ══ -->
+    <div class="game-panel" id="panelMemory">
+      <div class="memory-hud">
+        <div class="hud-stat">
+          <div class="hud-val" id="memPairs">0</div>
+          <div class="hud-lbl">Pairs</div>
+        </div>
+        <div class="hud-stat">
+          <div class="hud-val" id="memMoves">0</div>
+          <div class="hud-lbl">Moves</div>
+        </div>
+        <div class="hud-stat">
+          <div class="hud-val" id="memEarn">$0</div>
+          <div class="hud-lbl">Reward</div>
+        </div>
+      </div>
+
+      <div class="memory-grid" id="memoryGrid"></div>
+
+      <div class="result-box" id="memoryResult">
+        <div class="result-big" id="memoryResultVal"></div>
+        <div class="result-sub" id="memoryResultSub"></div>
+        <div class="result-btns">
+          <button class="btn btn-yellow btn-full" id="memoryCollect">Collect $<span id="memoryCollectAmt"></span> 💰</button>
+          <button class="btn btn-ghost btn-full" onclick="startMemoryGame()">▶ Play Again</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full mt-8" id="memoryStartBtn" onclick="startMemoryGame()">▶ Start Game</button>
+      <p style="text-align:center;margin-top:10px;font-size:.78rem;color:var(--text-muted);font-weight:700;">Fewer moves = more money • Up to $12</p>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+  <script>
+    function updateMoney() {
+      document.getElementById('moneyVal').textContent = getState().money;
+    }
+    updateMoney();
+
+    function collectMoney(amount, cb) {
+      if (amount > 0) {
+        const s = getState();
+        s.money += amount;
+        s.totalEarned += amount;
+        logTransaction(s, 'earn', amount, 'Mini-game earnings', '💰', 'minigame');
+        const newBadges = checkAndAwardBadges(s);
+        saveState(s);
+        updateMoney();
+        showToast('💰 Collected $' + amount + '!');
+        if (newBadges.length) setTimeout(() => showToast('🏆 Badge: ' + newBadges[0].label + '!', 3000), 800);
+      }
+      if (cb) cb();
+    }
+
+    function switchGame(g) {
+      ['mole','reaction','math','memory'].forEach(id => {
+        document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1)).classList.toggle('active', g===id);
+        document.getElementById('panel' + id.charAt(0).toUpperCase() + id.slice(1)).classList.toggle('active', g===id);
+      });
+      if (g==='mole')     resetMole();
+      if (g==='reaction') resetReaction();
+      if (g==='math')     resetMath();
+      if (g==='memory')   resetMemory();
+    }
+
+    // ══ MOLE GAME ══════════════════════════════════════════════
+    const HOLES = 6, GAME_SECS = 10;
+    let moleHits=0, moleTimeLeft=0, moleActive=-1, moleInterval=null, moleCountdown=null, moleRunning=false;
+
+    function resetMole() {
+      clearInterval(moleInterval); clearInterval(moleCountdown);
+      moleRunning = false;
+      for (let i=0;i<HOLES;i++) clearHole(i);
+      document.getElementById('moleHits').textContent = '0';
+      document.getElementById('moleTime').textContent = GAME_SECS;
+      document.getElementById('timerBar').style.width = '100%';
+      document.getElementById('timerBar').style.background = 'var(--green)';
+      document.getElementById('moleResult').style.display = 'none';
+      document.getElementById('moleStartBtn').style.display = '';
+    }
+
+    function startMoleGame() {
+      moleHits=0; moleTimeLeft=GAME_SECS; moleActive=-1; moleRunning=true;
+      document.getElementById('moleHits').textContent='0';
+      document.getElementById('moleTime').textContent=GAME_SECS;
+      document.getElementById('timerBar').style.width='100%';
+      document.getElementById('timerBar').style.background='var(--green)';
+      document.getElementById('moleResult').style.display='none';
+      document.getElementById('moleStartBtn').style.display='none';
+      clearInterval(moleInterval); clearInterval(moleCountdown);
+      for (let i=0;i<HOLES;i++) clearHole(i);
+      showMole();
+      moleInterval  = setInterval(showMole, 700);
+      moleCountdown = setInterval(tickMole, 1000);
+    }
+
+    function clearHole(i) {
+      const h = document.getElementById('hole'+i);
+      h.classList.remove('has-mole','hit');
+      h.innerHTML='';
+    }
+
+    function showMole() {
+      if (moleActive>=0) clearHole(moleActive);
+      moleActive = Math.floor(Math.random()*HOLES);
+      const h = document.getElementById('hole'+moleActive);
+      h.classList.add('has-mole');
+      h.innerHTML='<span class="mole-emoji">🐹</span>';
+    }
+
+    function tickMole() {
+      moleTimeLeft--;
+      document.getElementById('moleTime').textContent=moleTimeLeft;
+      document.getElementById('timerBar').style.width=(moleTimeLeft/GAME_SECS*100)+'%';
+      if (moleTimeLeft<=3) document.getElementById('timerBar').style.background='var(--red)';
+      if (moleTimeLeft<=0) endMoleGame();
+    }
+
+    for (let i=0;i<HOLES;i++) {
+      document.getElementById('hole'+i).addEventListener('click', function() {
+        if (!moleRunning) return;
+        if (this.classList.contains('has-mole')) {
+          this.classList.remove('has-mole'); this.classList.add('hit');
+          this.innerHTML='💥'; moleHits++;
+          document.getElementById('moleHits').textContent=moleHits;
+          setTimeout(()=>{ this.classList.remove('hit'); this.innerHTML=''; },300);
+        }
+      });
+    }
+
+    function endMoleGame() {
+      clearInterval(moleInterval); clearInterval(moleCountdown);
+      moleRunning=false;
+      for (let i=0;i<HOLES;i++) clearHole(i);
+      const earned=moleHits;
+      document.getElementById('moleResultVal').textContent = earned>0 ? '+$'+earned : '$0';
+      document.getElementById('moleResultSub').textContent = earned===0?'Better luck next time!':earned<5?'Nice try!':earned<10?'Great job!':'🔥 Amazing!';
+      document.getElementById('moleCollectAmt').textContent=earned;
+      const btn=document.getElementById('moleCollect');
+      btn.style.display = earned>0?'':'none';
+      document.getElementById('moleResult').style.display='block';
+    }
+
+    document.getElementById('moleCollect').addEventListener('click',()=>{
+      collectMoney(moleHits, resetMole);
+    });
+
+    // ══ REACTION GAME ══════════════════════════════════════════
+    let reactionStart=0, reactionScore=0, reactionPhase='idle', reactionTimeout=null;
+    const clockFaces=['🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛'];
+    let clockIdx=0, clockAnim=null;
+
+    function resetReaction() {
+      clearTimeout(reactionTimeout); clearInterval(clockAnim);
+      reactionPhase='idle'; reactionScore=0; reactionStart=0;
+      const arena=document.getElementById('reactionArena');
+      arena.className='reaction-arena waiting';
+      document.getElementById('reactionEmoji').textContent='🕐';
+      document.getElementById('reactionStatus').textContent='Wait for it…';
+      document.getElementById('reactionSub').textContent='Tap when you see GO!';
+      document.getElementById('reactionScoreBox').style.display='none';
+      document.getElementById('reactionResult').style.display='none';
+      document.getElementById('reactionStartBtn').style.display='';
+    }
+
+    function startReactionGame() {
+      reactionPhase='waiting';
+      document.getElementById('reactionStartBtn').style.display='none';
+      document.getElementById('reactionScoreBox').style.display='none';
+      document.getElementById('reactionResult').style.display='none';
+      const arena=document.getElementById('reactionArena');
+      arena.className='reaction-arena waiting';
+      document.getElementById('reactionStatus').textContent='Get Ready…';
+      document.getElementById('reactionSub').textContent='Tap as soon as you see GO!';
+      clockIdx=0;
+      clockAnim=setInterval(()=>{
+        clockIdx=(clockIdx+1)%clockFaces.length;
+        document.getElementById('reactionEmoji').textContent=clockFaces[clockIdx];
+      },120);
+      const delay=2000+Math.random()*4000;
+      reactionTimeout=setTimeout(()=>{
+        clearInterval(clockAnim);
+        reactionPhase='go'; reactionStart=Date.now();
+        arena.className='reaction-arena go';
+        document.getElementById('reactionEmoji').textContent='🟢';
+        document.getElementById('reactionStatus').textContent='GO!';
+        document.getElementById('reactionSub').textContent='TAP NOW!';
+      },delay);
+    }
+
+    document.getElementById('reactionArena').addEventListener('click',()=>{
+      if (reactionPhase==='waiting') {
+        clearTimeout(reactionTimeout); clearInterval(clockAnim);
+        reactionPhase='idle';
+        document.getElementById('reactionArena').className='reaction-arena waiting';
+        document.getElementById('reactionEmoji').textContent='❌';
+        document.getElementById('reactionStatus').textContent='Too early!';
+        document.getElementById('reactionSub').textContent='';
+        showToast('❌ Too early! Wait for GO!');
+        // show result box with 0 earned
+        document.getElementById('reactionResultVal').textContent='Too Early!';
+        document.getElementById('reactionResultSub').textContent='Wait for the green light next time';
+        document.getElementById('reactionCollect').style.display='none';
+        document.getElementById('reactionResult').style.display='block';
+        return;
+      }
+      if (reactionPhase!=='go') return;
+      const ms=Date.now()-reactionStart;
+      reactionScore=Math.max(0,Math.floor(10-ms/100));
+      reactionPhase='done';
+      document.getElementById('reactionArena').className='reaction-arena result';
+      document.getElementById('reactionEmoji').textContent=ms<200?'🚀':ms<400?'⚡':ms<700?'👍':'🐢';
+      document.getElementById('reactionStatus').textContent=ms+'ms';
+      document.getElementById('reactionSub').textContent=ms<200?'Superhuman!':ms<400?'Lightning fast!':ms<700?'Good!':'Keep practicing!';
+      document.getElementById('reactionEarned').textContent=reactionScore;
+      document.getElementById('reactionScoreSub').textContent='Reaction time: '+ms+'ms';
+      document.getElementById('reactionScoreBox').style.display='block';
+      // show result box
+      document.getElementById('reactionResultVal').textContent=reactionScore>0?'+$'+reactionScore:'$0';
+      document.getElementById('reactionResultSub').textContent=ms<200?'Superhuman reflexes!':ms<400?'Lightning fast!':ms<700?'Pretty good!':'A bit slow…';
+      document.getElementById('reactionCollectAmt').textContent=reactionScore;
+      document.getElementById('reactionCollect').style.display=reactionScore>0?'':'none';
+      document.getElementById('reactionResult').style.display='block';
+    });
+
+    document.getElementById('reactionCollect').addEventListener('click',()=>{
+      collectMoney(reactionScore, resetReaction);
+    });
+
+    // ══ MATH BLITZ ══════════════════════════════════════════════
+    const MATH_SECS=15;
+    let mathCorrect=0, mathTimeLeft=0, mathAnswer_=0, mathCountdown=null, mathRunning=false, mathLocked=false;
+
+    function resetMath() {
+      clearInterval(mathCountdown); mathRunning=false;
+      document.getElementById('mathScore').textContent='0';
+      document.getElementById('mathTime').textContent=MATH_SECS;
+      document.getElementById('mathTimerBar').style.width='100%';
+      document.getElementById('mathTimerBar').style.background='var(--green)';
+      document.getElementById('mathQuestionBox').style.display='none';
+      document.getElementById('mathAnswers').style.display='none';
+      document.getElementById('mathResult').style.display='none';
+      document.getElementById('mathStartBtn').style.display='';
+    }
+
+    function startMathGame() {
+      mathCorrect=0; mathTimeLeft=MATH_SECS; mathRunning=true; mathLocked=false;
+      document.getElementById('mathScore').textContent='0';
+      document.getElementById('mathTime').textContent=MATH_SECS;
+      document.getElementById('mathTimerBar').style.width='100%';
+      document.getElementById('mathTimerBar').style.background='var(--green)';
+      document.getElementById('mathResult').style.display='none';
+      document.getElementById('mathStartBtn').style.display='none';
+      document.getElementById('mathQuestionBox').style.display='block';
+      document.getElementById('mathAnswers').style.display='grid';
+      nextMathQuestion();
+      mathCountdown=setInterval(tickMath,1000);
+    }
+
+    function nextMathQuestion() {
+      mathLocked=false;
+      // reset button styles
+      for(let i=0;i<4;i++){
+        const b=document.getElementById('mathA'+i);
+        b.classList.remove('correct','wrong');
+        b.disabled=false;
+      }
+      const ops=['+','-','×'];
+      const op=ops[Math.floor(Math.random()*ops.length)];
+      let a,b,ans;
+      if(op==='+'){a=Math.floor(Math.random()*20)+1;b=Math.floor(Math.random()*20)+1;ans=a+b;}
+      else if(op==='-'){a=Math.floor(Math.random()*20)+10;b=Math.floor(Math.random()*a)+1;ans=a-b;}
+      else{a=Math.floor(Math.random()*9)+2;b=Math.floor(Math.random()*9)+2;ans=a*b;}
+      mathAnswer_=ans;
+      document.getElementById('mathQText').textContent=a+' '+op+' '+b+' = ?';
+      // generate 3 wrong answers
+      const wrongs=new Set();
+      while(wrongs.size<3){
+        const off=Math.floor(Math.random()*10)+1;
+        const w=Math.random()<.5?ans+off:ans-off;
+        if(w!==ans && w>0) wrongs.add(w);
+      }
+      const opts=[ans,...wrongs].sort(()=>Math.random()-.5);
+      for(let i=0;i<4;i++) document.getElementById('mathA'+i).textContent=opts[i];
+    }
+
+    function mathAnswer(idx) {
+      if(!mathRunning||mathLocked) return;
+      mathLocked=true;
+      const btn=document.getElementById('mathA'+idx);
+      const chosen=parseInt(btn.textContent);
+      if(chosen===mathAnswer_){
+        btn.classList.add('correct');
+        mathCorrect++;
+        document.getElementById('mathScore').textContent=mathCorrect;
+        setTimeout(()=>{ if(mathRunning) nextMathQuestion(); },400);
+      } else {
+        btn.classList.add('wrong');
+        // highlight correct
+        for(let i=0;i<4;i++){
+          if(parseInt(document.getElementById('mathA'+i).textContent)===mathAnswer_)
+            document.getElementById('mathA'+i).classList.add('correct');
+        }
+        setTimeout(()=>{ if(mathRunning) nextMathQuestion(); },700);
+      }
+    }
+
+    function tickMath(){
+      mathTimeLeft--;
+      document.getElementById('mathTime').textContent=mathTimeLeft;
+      document.getElementById('mathTimerBar').style.width=(mathTimeLeft/MATH_SECS*100)+'%';
+      if(mathTimeLeft<=5) document.getElementById('mathTimerBar').style.background='var(--red)';
+      if(mathTimeLeft<=0) endMathGame();
+    }
+
+    function endMathGame(){
+      clearInterval(mathCountdown); mathRunning=false;
+      document.getElementById('mathQuestionBox').style.display='none';
+      document.getElementById('mathAnswers').style.display='none';
+      const earned=mathCorrect;
+      document.getElementById('mathResultVal').textContent=earned>0?'+$'+earned:'$0';
+      document.getElementById('mathResultSub').textContent=
+        earned===0?'No correct answers — try again!':
+        earned<5?'Not bad, keep practicing!':
+        earned<10?'Great mental math! 🧠':
+        '🔥 Genius level!';
+      document.getElementById('mathCollectAmt').textContent=earned;
+      document.getElementById('mathCollect').style.display=earned>0?'':'none';
+      document.getElementById('mathResult').style.display='block';
+    }
+
+    document.getElementById('mathCollect').addEventListener('click',()=>{
+      collectMoney(mathCorrect, resetMath);
+    });
+
+    // ══ MEMORY MATCH ════════════════════════════════════════════
+    const MEM_EMOJIS=['🍕','⭐','🌙','🎯','💎','🔥','🎸','🌈'];
+    let memFlipped=[],memMatched=0,memMoves=0,memLocked=false,memRunning=false;
+
+    function resetMemory(){
+      memFlipped=[]; memMatched=0; memMoves=0; memLocked=false; memRunning=false;
+      document.getElementById('memPairs').textContent='0';
+      document.getElementById('memMoves').textContent='0';
+      document.getElementById('memEarn').textContent='$0';
+      document.getElementById('memoryResult').style.display='none';
+      document.getElementById('memoryStartBtn').style.display='';
+      document.getElementById('memoryGrid').innerHTML='';
+    }
+
+    function startMemoryGame(){
+      resetMemory(); memRunning=true;
+      document.getElementById('memoryStartBtn').style.display='none';
+      // build shuffled deck
+      const deck=[...MEM_EMOJIS,...MEM_EMOJIS].sort(()=>Math.random()-.5);
+      const grid=document.getElementById('memoryGrid');
+      grid.innerHTML='';
+      deck.forEach((emoji,i)=>{
+        const card=document.createElement('div');
+        card.className='mem-card';
+        card.dataset.emoji=emoji;
+        card.dataset.idx=i;
+        card.innerHTML=`<div class="mem-front">${emoji}</div><div class="mem-back">❓</div>`;
+        card.addEventListener('click',()=>memFlip(card));
+        grid.appendChild(card);
+      });
+    }
+
+    function memFlip(card){
+      if(!memRunning||memLocked) return;
+      if(card.classList.contains('flipped')||card.classList.contains('matched')) return;
+      card.classList.add('flipped');
+      memFlipped.push(card);
+      if(memFlipped.length===2){
+        memMoves++;
+        document.getElementById('memMoves').textContent=memMoves;
+        memLocked=true;
+        const [a,b]=memFlipped;
+        if(a.dataset.emoji===b.dataset.emoji){
+          a.classList.add('matched'); b.classList.add('matched');
+          memMatched++;
+          document.getElementById('memPairs').textContent=memMatched;
+          const reward=calcMemReward();
+          document.getElementById('memEarn').textContent='$'+reward;
+          memFlipped=[]; memLocked=false;
+          if(memMatched===MEM_EMOJIS.length) setTimeout(endMemoryGame,400);
+        } else {
+          setTimeout(()=>{
+            a.classList.remove('flipped'); b.classList.remove('flipped');
+            memFlipped=[]; memLocked=false;
+          },900);
+        }
+      }
+    }
+
+    function calcMemReward(){
+      // 8 pairs, reward based on moves efficiency: par is 8 moves (perfect), cap at 24
+      const par=8;
+      const extra=Math.max(0,memMoves-par);
+      return Math.max(0,12-extra);
+    }
+
+    function endMemoryGame(){
+      memRunning=false;
+      const earned=calcMemReward();
+      document.getElementById('memoryResultVal').textContent=earned>0?'+$'+earned:'$0';
+      document.getElementById('memoryResultSub').textContent=
+        memMoves<=10?'🏆 Incredible memory!':
+        memMoves<=14?'Great job! 🧠':
+        memMoves<=20?'Not bad!':
+        'Try fewer moves next time!';
+      document.getElementById('memoryCollectAmt').textContent=earned;
+      document.getElementById('memoryCollect').style.display=earned>0?'':'none';
+      document.getElementById('memoryResult').style.display='block';
+    }
+
+    document.getElementById('memoryCollect').addEventListener('click',()=>{
+      collectMoney(calcMemReward(), resetMemory);
+    });
+
+    // ── init ──
+    resetMole();
+    resetReaction();
+    resetMath();
+    resetMemory();
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Shop</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:.95rem; }
+
+    .wallet-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--card); border:2px solid var(--border); border-radius:16px;
+      padding:14px 20px; margin-bottom:16px;
+    }
+    .wallet-label { font-size:.8rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+
+    /* Category tabs */
+    .cat-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; scrollbar-width:none; }
+    .cat-tabs::-webkit-scrollbar { display:none; }
+    .cat-tab {
+      flex-shrink:0; padding:8px 14px;
+      background:var(--card); border:2px solid var(--border); border-radius:12px;
+      font-family:'Nunito',sans-serif; font-weight:800; font-size:.8rem; color:var(--text-muted);
+      cursor:pointer; transition:all .18s; white-space:nowrap;
+    }
+    .cat-tab:hover { border-color:var(--border-hi); color:var(--text); }
+    .cat-tab.active { background:var(--card2); border-color:var(--purple); color:var(--purple); }
+
+    /* Category section */
+    .shop-category { margin-bottom:24px; }
+    .shop-cat-title {
+      font-family:'Fredoka One',cursive; font-size:1rem; color:var(--text-muted);
+      text-transform:uppercase; font-size:.75rem; letter-spacing:.5px;
+      margin-bottom:10px; display:flex; align-items:center; gap:6px;
+    }
+    .shop-cat-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* Item cards */
+    .shop-grid { display:flex; flex-direction:column; gap:10px; }
+    .shop-card {
+      display:flex; align-items:center; gap:14px;
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:14px 16px; position:relative; overflow:hidden;
+    }
+    .shop-card.owned { border-color:rgba(52,211,153,.4); background:rgba(52,211,153,.03); }
+    .shop-card.owned::after {
+      content:'OWNED'; position:absolute; top:10px; right:14px;
+      font-size:.65rem; font-weight:900; letter-spacing:1px; color:var(--green);
+    }
+    .shop-card.equipped { border-color:var(--yellow); background:rgba(251,191,36,.04); }
+    .shop-card.equipped::after {
+      content:'EQUIPPED'; position:absolute; top:10px; right:14px;
+      font-size:.65rem; font-weight:900; letter-spacing:1px; color:var(--yellow);
+    }
+    .shop-card.cant-afford { opacity:.5; }
+    .shop-icon { font-size:2.4rem; flex-shrink:0; width:52px; text-align:center; }
+    .shop-info { flex:1; }
+    .shop-item-name { font-size:1rem; font-weight:800; margin-bottom:2px; }
+    .shop-item-desc { font-size:.76rem; font-weight:700; color:var(--text-muted); }
+    .shop-effects { display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+    .effect-tag {
+      display:inline-flex; align-items:center; gap:2px;
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:999px; padding:2px 8px;
+      font-size:.68rem; font-weight:700; color:var(--text-muted);
+    }
+    .effect-tag.pos { color:var(--green); border-color:rgba(52,211,153,.3); }
+    .effect-tag.xp  { color:var(--yellow); border-color:rgba(251,191,36,.3); }
+    .shop-buy-col { flex-shrink:0; text-align:right; }
+    .shop-price { font-family:'Fredoka One',cursive; font-size:1.1rem; color:var(--yellow); display:block; margin-bottom:5px; }
+    .btn-buy {
+      background:var(--purple); color:#fff;
+      font-family:'Nunito',sans-serif; font-weight:800; font-size:.8rem;
+      border:none; border-radius:10px; padding:7px 14px; cursor:pointer;
+      box-shadow:0 3px 0 var(--purple-dark); transition:all .1s;
+      white-space:nowrap;
+    }
+    .btn-buy:hover  { filter:brightness(1.1); }
+    .btn-buy:active { transform:translateY(2px); box-shadow:0 1px 0 var(--purple-dark); }
+    .btn-buy.equip  { background:var(--yellow); color:#1a0f00; box-shadow:0 3px 0 var(--yellow-dark); }
+    .btn-buy.owned-btn { background:var(--bg2); color:var(--text-muted); box-shadow:none; cursor:default; }
+    .btn-buy:disabled { opacity:.5; cursor:not-allowed; }
+
+    .tier-badge {
+      display:inline-block; font-size:.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.5px;
+      border-radius:999px; padding:2px 7px; margin-left:6px; vertical-align:middle;
+    }
+    .tier-basic    { background:rgba(96,165,250,.15); color:var(--blue); border:1px solid rgba(96,165,250,.3); }
+    .tier-premium  { background:rgba(167,139,250,.15); color:var(--purple); border:1px solid rgba(167,139,250,.3); }
+    .tier-elite    { background:rgba(251,191,36,.15); color:var(--yellow); border:1px solid rgba(251,191,36,.3); }
+    .tier-legendary{ background:linear-gradient(90deg,rgba(251,191,36,.2),rgba(244,114,182,.2)); color:var(--pink); border:1px solid rgba(244,114,182,.4); }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">🛒 Shop</div>
+    <p class="page-sub">Upgrade your pet's life</p>
+
+    <div class="wallet-bar">
+      <span class="wallet-label">Balance</span>
+      <div class="money-chip">💰 $<span id="moneyVal"></span></div>
+    </div>
+
+    <div class="cat-tabs" id="catTabs">
+      <button class="cat-tab active" data-cat="all">🏪 All</button>
+      <button class="cat-tab" data-cat="toys">🎾 Toys</button>
+      <button class="cat-tab" data-cat="food">🍖 Food</button>
+      <button class="cat-tab" data-cat="care">🛁 Care</button>
+      <button class="cat-tab" data-cat="xp">✨ XP Boosts</button>
+      <button class="cat-tab" data-cat="home">🏠 Home</button>
+    </div>
+
+    <div id="shopContent"></div>
+  </div>
+
+  <div id="toast"></div>
+  <script>
+    // ─── Shop item definitions ───────────────────────────────────────
+    const SHOP_ITEMS = [
+      // TOYS
+      { id:'rubber_duck',   cat:'toys', emoji:'🦆', name:'Rubber Duck',    tier:'basic',
+        desc:'A classic squeaky toy. Your pet will love it!',
+        price:15, effects:[{label:'Happy +5/play',cls:'pos'},{label:'+3 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:5 },
+      { id:'chew_bone',     cat:'toys', emoji:'🦴', name:'Chew Bone',      tier:'premium',
+        desc:'A durable bone that keeps your pet occupied for hours.',
+        price:75, effects:[{label:'Happy +10/play',cls:'pos'},{label:'+5 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:10 },
+      { id:'ultra_ball',    cat:'toys', emoji:'⚽', name:'Ultra Ball',     tier:'elite',
+        desc:'High-bounce ball with infinite entertainment value.',
+        price:200, effects:[{label:'Happy +18/play',cls:'pos'},{label:'+8 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:18 },
+      { id:'laser_pointer', cat:'toys', emoji:'🔴', name:'Laser Pointer',  tier:'premium',
+        desc:'Endless fun for cats and curious pets.',
+        price:50, effects:[{label:'Happy +12/play',cls:'pos'},{label:'+6 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:12 },
+      { id:'feather_wand',  cat:'toys', emoji:'🪶', name:'Feather Wand',   tier:'basic',
+        desc:'A teasing wand that drives pets wild.',
+        price:25, effects:[{label:'Happy +8/play',cls:'pos'},{label:'+4 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:8 },
+      { id:'dragon_plush',  cat:'toys', emoji:'🧸', name:'Dragon Plush',   tier:'legendary',
+        desc:'A legendary plushie that grants max happiness on play!',
+        price:500, effects:[{label:'Happy +25/play',cls:'pos'},{label:'+15 XP/use',cls:'xp'}],
+        action:'toy', happyBonus:25 },
+
+      // FOOD
+      { id:'premium_kibble', cat:'food', emoji:'🥣', name:'Premium Kibble', tier:'basic',
+        desc:'Bulk food supply — cuts feeding cost to $1 for 10 feeds.',
+        price:30, effects:[{label:'10 cheap feeds',cls:'pos'},{label:'+5 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.cheapFeeds = (s.cheapFeeds||0)+10; } },
+      { id:'gourmet_steak',  cat:'food', emoji:'🥩', name:'Gourmet Steak',  tier:'premium',
+        desc:'Instantly fills hunger to 0 and boosts happiness.',
+        price:20, effects:[{label:'Hunger → 0',cls:'pos'},{label:'Happy +15',cls:'pos'}],
+        action:'consumable', onBuy:(s)=>{ s.hunger=0; s.happiness=clamp(s.happiness+15); } },
+      { id:'magic_biscuits', cat:'food', emoji:'✨', name:'Magic Biscuits', tier:'elite',
+        desc:'Special treats that also restore energy!',
+        price:45, effects:[{label:'Hunger -30',cls:'pos'},{label:'Energy +20',cls:'pos'},{label:'+10 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.hunger=clamp(s.hunger-30); s.energy=clamp(s.energy+20); addXP(s,10); } },
+      { id:'rainbow_candy',  cat:'food', emoji:'🍬', name:'Rainbow Candy',  tier:'premium',
+        desc:'A sweet treat — instant max happiness!',
+        price:35, effects:[{label:'Happy → 100',cls:'pos'},{label:'+8 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.happiness=100; addXP(s,8); } },
+      { id:'elixir',         cat:'food', emoji:'🧪', name:'Elixir of Life', tier:'legendary',
+        desc:'A mythical potion — fully restores ALL stats!',
+        price:250, effects:[{label:'All stats → 100',cls:'pos'},{label:'+50 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.health=100; s.happiness=100; s.energy=100; s.hunger=0; addXP(s,50); } },
+
+      // CARE
+      { id:'shampoo',       cat:'care', emoji:'🧴', name:'Premium Shampoo',  tier:'basic',
+        desc:'3 free baths — skip the $2 cleaning cost.',
+        price:10, effects:[{label:'3 free cleans',cls:'pos'}],
+        action:'consumable', onBuy:(s)=>{ s.freeCleans = (s.freeCleans||0)+3; } },
+      { id:'vitamin_pack',  cat:'care', emoji:'💊', name:'Vitamin Pack',     tier:'premium',
+        desc:'Daily vitamins — health slowly regenerates over time.',
+        price:60, effects:[{label:'Health regen',cls:'pos'},{label:'+10 XP',cls:'xp'}],
+        action:'passive', onBuy:(s)=>{ s.healthRegen=true; addXP(s,10); } },
+      { id:'first_aid_kit', cat:'care', emoji:'🩺', name:'First Aid Kit',    tier:'basic',
+        desc:'Instantly restore 30 health without a vet visit.',
+        price:25, effects:[{label:'Health +30',cls:'pos'},{label:'+5 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.health=clamp(s.health+30); addXP(s,5); } },
+      { id:'spa_day',       cat:'care', emoji:'💆', name:'Spa Day Package',  tier:'elite',
+        desc:'Full pampering — max happiness and health boost.',
+        price:80, effects:[{label:'Happy +30',cls:'pos'},{label:'Health +20',cls:'pos'},{label:'+15 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.happiness=clamp(s.happiness+30); s.health=clamp(s.health+20); addXP(s,15); } },
+      { id:'sleepy_bed',    cat:'care', emoji:'🛏️', name:'Cozy Pet Bed',     tier:'premium',
+        desc:'Resting now restores 50 energy instead of 25.',
+        price:90, effects:[{label:'Rest +50 energy',cls:'pos'},{label:'+10 XP',cls:'xp'}],
+        action:'passive', onBuy:(s)=>{ s.cozyBed=true; addXP(s,10); } },
+      { id:'miracle_cure',  cat:'care', emoji:'💉', name:'Miracle Cure',     tier:'legendary',
+        desc:'Prevents health drops for 5 minutes — total immunity!',
+        price:175, effects:[{label:'5min immunity',cls:'pos'},{label:'+30 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ s.immuneUntil=Date.now()+300000; addXP(s,30); } },
+
+      // XP BOOSTS
+      { id:'xp_scroll',    cat:'xp', emoji:'📜', name:'XP Scroll',       tier:'basic',
+        desc:'A small scroll that grants instant XP.',
+        price:20, effects:[{label:'+25 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ addXP(s,25); } },
+      { id:'xp_tome',      cat:'xp', emoji:'📚', name:'Ancient Tome',    tier:'premium',
+        desc:'A powerful book of knowledge.',
+        price:50, effects:[{label:'+75 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ addXP(s,75); } },
+      { id:'xp_crystal',   cat:'xp', emoji:'💎', name:'XP Crystal',      tier:'elite',
+        desc:'A sparkling crystal brimming with evolution energy.',
+        price:100, effects:[{label:'+150 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ addXP(s,150); } },
+      { id:'xp_star',      cat:'xp', emoji:'⭐', name:'Star Fragment',   tier:'legendary',
+        desc:'A fallen star — massive XP boost!',
+        price:300, effects:[{label:'+400 XP',cls:'xp'}],
+        action:'consumable', onBuy:(s)=>{ addXP(s,400); } },
+
+      // HOME
+      { id:'cozy_mat',     cat:'home', emoji:'🪑', name:'Cozy Mat',        tier:'basic',
+        desc:'Your pet feels more at home. +3 happiness per rest.',
+        price:40, effects:[{label:'Happy +3/rest',cls:'pos'}],
+        action:'passive', onBuy:(s)=>{ s.cozyMat=true; } },
+      { id:'aquarium',     cat:'home', emoji:'🐠', name:'Mini Aquarium',   tier:'premium',
+        desc:'Calming fish tank — reduces happiness drain rate.',
+        price:120, effects:[{label:'Slower happy drain',cls:'pos'},{label:'+10 XP',cls:'xp'}],
+        action:'passive', onBuy:(s)=>{ s.aquarium=true; addXP(s,10); } },
+      { id:'obstacle_course',cat:'home',emoji:'🏋️',name:'Obstacle Course', tier:'elite',
+        desc:'Play gives 2× happiness and XP!',
+        price:200, effects:[{label:'2× play rewards',cls:'pos'},{label:'+20 XP',cls:'xp'}],
+        action:'passive', onBuy:(s)=>{ s.obstacleCourse=true; addXP(s,20); } },
+      { id:'mansion',      cat:'home', emoji:'🏰', name:'Pet Mansion',     tier:'legendary',
+        desc:'The ultimate home — all passive effects active!',
+        price:1000, effects:[{label:'All passives',cls:'pos'},{label:'+100 XP',cls:'xp'}],
+        action:'passive', onBuy:(s)=>{ s.cozyMat=true; s.aquarium=true; s.cozyBed=true; s.healthRegen=true; addXP(s,100); } },
+    ];
+
+    // Items that can be re-bought multiple times (consumables with stacking)
+    const STACKABLE = ['premium_kibble','shampoo','xp_scroll','xp_tome','xp_crystal','xp_star',
+                       'gourmet_steak','magic_biscuits','rainbow_candy','first_aid_kit','spa_day',
+                       'miracle_cure','elixir'];
+
+    let currentCat = 'all';
+
+    function render() {
+      const s = getState();
+      document.getElementById('moneyVal').textContent = s.money;
+      renderShop(s);
+    }
+
+    function renderShop(s) {
+      const inv = s.inventory || {};
+      const content = document.getElementById('shopContent');
+      const cats = currentCat === 'all'
+        ? ['toys','food','care','xp','home']
+        : [currentCat];
+      const catLabels = {
+        toys:  '🎾 Toys',
+        food:  '🍖 Food & Treats',
+        care:  '🛁 Health & Care',
+        xp:    '✨ XP Boosts',
+        home:  '🏠 Home Items',
+      };
+
+      content.innerHTML = cats.map(cat => {
+        const items = SHOP_ITEMS.filter(i => i.cat === cat);
+        return `
+          <div class="shop-category">
+            <div class="shop-cat-title">${catLabels[cat]}</div>
+            <div class="shop-grid">
+              ${items.map(item => renderCard(item, s, inv)).join('')}
+            </div>
+          </div>`;
+      }).join('');
+
+      // Attach buy handlers
+      content.querySelectorAll('[data-buy]').forEach(btn => {
+        btn.addEventListener('click', () => buyItem(btn.dataset.buy));
+      });
+      content.querySelectorAll('[data-equip]').forEach(btn => {
+        btn.addEventListener('click', () => equipToy(btn.dataset.equip));
+      });
+    }
+
+    function getTierLabel(tier) {
+      const map = { basic:'Basic', premium:'Premium', elite:'Elite', legendary:'Legendary' };
+      return `<span class="tier-badge tier-${tier}">${map[tier]||tier}</span>`;
+    }
+
+    function renderCard(item, s, inv) {
+      const owned = !!inv[item.id];
+      const stackable = STACKABLE.includes(item.id);
+      const canAfford = s.money >= item.price;
+      const isEquipped = s.equippedToy === item.id;
+      const isToy = item.cat === 'toys';
+
+      let cardCls = 'shop-card';
+      if (isToy && isEquipped) cardCls += ' equipped';
+      else if (owned && !stackable) cardCls += ' owned';
+      else if (!canAfford) cardCls += ' cant-afford';
+
+      let btnHtml = '';
+      if (isToy && owned && !isEquipped) {
+        btnHtml = `<button class="btn-buy equip" data-equip="${item.id}">Equip</button>`;
+      } else if (isToy && isEquipped) {
+        btnHtml = `<button class="btn-buy owned-btn" disabled>Equipped</button>`;
+      } else if (owned && !stackable) {
+        btnHtml = `<button class="btn-buy owned-btn" disabled>Owned</button>`;
+      } else {
+        btnHtml = `<button class="btn-buy" data-buy="${item.id}" ${!canAfford?'disabled':''}>$${item.price}</button>`;
+      }
+
+      const effects = item.effects.map(e => `<span class="effect-tag ${e.cls}">${e.label}</span>`).join('');
+
+      return `<div class="${cardCls}">
+        <div class="shop-icon">${item.emoji}</div>
+        <div class="shop-info">
+          <div class="shop-item-name">${item.name}${getTierLabel(item.tier)}</div>
+          <div class="shop-item-desc">${item.desc}</div>
+          <div class="shop-effects">${effects}</div>
+        </div>
+        <div class="shop-buy-col">
+          <span class="shop-price">$${item.price}</span>
+          ${btnHtml}
+        </div>
+      </div>`;
+    }
+
+    function buyItem(itemId) {
+      let s = getState();
+      const item = SHOP_ITEMS.find(i => i.id === itemId);
+      if (!item) return;
+      if (s.money < item.price) { showToast('❌ Not enough money!'); return; }
+
+      s.money -= item.price;
+      s.totalExpenses += item.price;
+      if (!s.inventory) s.inventory = {};
+      logTransaction(s, 'spend', item.price, 'Bought ' + item.name, item.emoji, 'shop');
+
+      const stackable = STACKABLE.includes(item.id);
+      if (!stackable) s.inventory[item.id] = true;
+
+      // Apply effect
+      if (item.onBuy) item.onBuy(s);
+
+      // Auto-equip first toy
+      if (item.cat === 'toys' && !s.equippedToy) {
+        s.equippedToy = item.id;
+        s.playToy = item.id;
+      }
+
+      // XP for any purchase
+      addXP(s, 5);
+
+      const newBadges = checkAndAwardBadges(s);
+      saveState(s);
+      showToast(`✅ Bought ${item.name}! +5 XP`);
+      if (newBadges.length) {
+        setTimeout(() => showToast('🏆 Badge: ' + newBadges[0].label + '!', 3000), 800);
+      }
+      render();
+    }
+
+    function equipToy(itemId) {
+      let s = getState();
+      s.equippedToy = itemId;
+      s.playToy = itemId;
+      saveState(s);
+      showToast('🎾 Toy equipped!');
+      render();
+    }
+
+    // Category tabs
+    document.getElementById('catTabs').addEventListener('click', e => {
+      const tab = e.target.closest('.cat-tab');
+      if (!tab) return;
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentCat = tab.dataset.cat;
+      render();
+    });
+
+    window.addEventListener('petTick', () => render());
+    render();
+  </script>
+</body>
+</html>

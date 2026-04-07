@@ -1,0 +1,141 @@
+Pet Wonderland v2 — Attributions & Credits
+==========================================
+
+This project makes use of the following open-source libraries, fonts,
+and third-party resources. We gratefully acknowledge their authors.
+
+──────────────────────────────────────────────────────────────────────
+FONTS
+──────────────────────────────────────────────────────────────────────
+
+Fredoka One
+  Author:    Milena Brandão
+  Source:    Google Fonts (fonts.google.com)
+  License:   SIL Open Font License 1.1
+  Usage:     Headings, titles, score displays, nav logo.
+
+Nunito
+  Author:    Vernon Adams, Cyreal
+  Source:    Google Fonts (fonts.google.com)
+  License:   SIL Open Font License 1.1
+  Usage:     Body text, labels, buttons, stat bars.
+
+──────────────────────────────────────────────────────────────────────
+BROWSER APIS
+──────────────────────────────────────────────────────────────────────
+
+Web Storage API (localStorage)
+  Specification: WHATWG HTML Living Standard
+  Source:        https://html.spec.whatwg.org/multipage/webstorage.html
+  Usage:         All game state persistence (pet stats, money, inventory,
+                 transaction ledger, badges, XP).
+
+CustomEvent API
+  Specification: W3C DOM Living Standard
+  Usage:         `petTick` event dispatched every 30 seconds to
+                 synchronize stat updates across open pages.
+
+requestAnimationFrame / CSS Animations
+  Specification: W3C CSS Animations Level 1
+  Usage:         Pet float, burst pop, ripple ring, confetti fall,
+                 XP shimmer, evo glow, stat bar transitions.
+
+SVG (Scalable Vector Graphics)
+  Specification: W3C SVG 1.1 / 2.0
+  Usage:         Animated ring charts in finance.html for score display.
+
+──────────────────────────────────────────────────────────────────────
+EMOJI & UNICODE
+──────────────────────────────────────────────────────────────────────
+
+Emoji sequences used throughout the UI are part of the Unicode Standard
+(Unicode Consortium, unicode.org). Rendered glyphs vary by operating
+system and browser using the system's native emoji font:
+
+  Apple Color Emoji  — macOS / iOS
+  Noto Color Emoji   — Android / ChromeOS / Linux (Google LLC, Apache 2.0)
+  Segoe UI Emoji     — Windows (Microsoft)
+  Twitter Color Emoji (Twemoji) — may apply in some browser contexts
+    License: CC BY 4.0 (graphics), MIT (code)
+    Source:  https://twemoji.twitter.com
+
+──────────────────────────────────────────────────────────────────────
+DESIGN INSPIRATION & REFERENCES
+──────────────────────────────────────────────────────────────────────
+
+Tamagotchi (Bandai Namco Entertainment, 1996–present)
+  The original virtual pet concept — a cultural touchstone that inspired
+  the stat-decay model, care actions, and pet lifecycle in this project.
+  No code or assets from Tamagotchi were used.
+
+Pokémon (Nintendo / Game Freak, 1996–present)
+  Inspired the evolution system (stage thresholds, naming conventions,
+  confetti celebration). No code or assets were used.
+
+Stardew Valley Economy Design (ConcernedApe, 2016)
+  Informed the balanced spending-vs-earning economy model and the idea
+  of tiered shop items with passive and consumable effects.
+
+──────────────────────────────────────────────────────────────────────
+ALGORITHMIC REFERENCES
+──────────────────────────────────────────────────────────────────────
+
+Financial Scoring Model
+  The three-axis scoring system (Earning, Savings, Efficiency) is
+  loosely inspired by the FICO Score methodology:
+    Fair Isaac Corporation, "Understanding FICO Scores"
+    https://www.myfico.com/credit-education/credit-scores
+  Adapted for a game context with simplified weighted scoring.
+
+Passive Decay Simulation
+  Offline stat decay is calculated using a simple linear approximation
+  based on elapsed wall-clock seconds. Similar approaches are described
+  in game-dev literature:
+    Raph Koster, "A Theory of Fun for Game Design" (Paraglyph Press, 2004)
+    Ernest Adams & Joris Dormans, "Game Mechanics: Advanced Game Design"
+    (New Riders, 2012)
+
+Memory Match Card Game
+  The standard Memory/Concentration card-matching game mechanic is in
+  the public domain. Scoring (fewer moves = higher reward) follows the
+  convention used in many digital implementations.
+
+──────────────────────────────────────────────────────────────────────
+OPEN-SOURCE CODE REFERENCES
+──────────────────────────────────────────────────────────────────────
+
+CSS Custom Properties (Design Tokens pattern)
+  Color-variable naming and dark-mode palette approach inspired by:
+  - Tailwind CSS (Tailwind Labs, MIT License)
+    https://tailwindcss.com
+  - Radix UI Color System (WorkOS, MIT License)
+    https://www.radix-ui.com/colors
+
+CSS `cubic-bezier` easing values
+  Spring-like easing curves (.175, .885, .32, 1.275) originate from the
+  open-source easing library:
+    Robert Penner's Easing Functions (BSD License)
+    https://easings.net / http://robertpenner.com/easing
+
+Toast notification pattern
+  Slide-in/slide-out toast implementation follows a well-established
+  web pattern. Similar approaches documented in:
+    Google Material Design Guidelines (material.io)
+    MDN Web Docs — CSS Transitions
+
+Confetti particle animation
+  Random DOM-element particle spawning technique commonly described in
+  open tutorials. No external confetti library was used; the
+  implementation is original.
+
+──────────────────────────────────────────────────────────────────────
+SPECIAL THANKS
+──────────────────────────────────────────────────────────────────────
+
+  The open-source web community for decades of freely shared knowledge
+  via MDN Web Docs (Mozilla), CSS-Tricks, and Stack Overflow.
+
+──────────────────────────────────────────────────────────────────────
+No third-party JavaScript libraries (jQuery, React, Vue, etc.) are
+used. The project is pure HTML / CSS / Vanilla JS.
+──────────────────────────────────────────────────────────────────────

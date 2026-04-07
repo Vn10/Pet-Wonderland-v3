@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Wonderland — Finance</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-title { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--text); margin:20px 0 4px; }
+    .page-sub   { color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:.95rem; }
+
+    /* ── Summary bar ── */
+    .summary-row {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      gap:10px; margin-bottom:20px;
+    }
+    .summary-chip {
+      background:var(--card); border:2px solid var(--border); border-radius:18px;
+      padding:14px 12px; text-align:center;
+    }
+    .summary-chip.earned  { border-color:rgba(52,211,153,.4); }
+    .summary-chip.spent   { border-color:rgba(248,113,113,.4); }
+    .summary-chip.balance { border-color:rgba(251,191,36,.4); }
+    .sum-icon { font-size:1.4rem; display:block; margin-bottom:4px; }
+    .sum-val  { font-family:'Fredoka One',cursive; font-size:1.3rem; line-height:1.1; }
+    .summary-chip.earned  .sum-val { color:var(--green); }
+    .summary-chip.spent   .sum-val { color:var(--red); }
+    .summary-chip.balance .sum-val { color:var(--yellow); }
+    .sum-lbl  { font-size:.68rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
+
+    /* ── Score section ── */
+    .score-card {
+      background:linear-gradient(135deg, var(--card) 0%, #0e0e1e 100%);
+      border:2px solid var(--border); border-radius:22px;
+      padding:24px 20px; margin-bottom:20px; text-align:center;
+    }
+    .score-card-title {
+      font-family:'Fredoka One',cursive; font-size:.78rem; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.5px; margin-bottom:16px;
+    }
+
+    /* circles row */
+    .circles-row {
+      display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:20px;
+    }
+    .score-circle-wrap { text-align:center; }
+    .score-circle-lbl  { font-size:.65rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-top:6px; }
+
+    /* SVG circle */
+    .ring-svg { display:block; margin:0 auto; }
+
+    /* overall big circle */
+    .big-circle-wrap { text-align:center; margin-bottom:6px; position:relative; display:inline-block; }
+    .big-score-num {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      font-family:'Fredoka One',cursive; font-size:2.2rem; color:var(--text);
+    }
+    .big-score-label {
+      font-size:.72rem; font-weight:800; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.5px; margin-top:4px;
+    }
+
+    .score-grade {
+      display:inline-block;
+      font-family:'Fredoka One',cursive; font-size:1.3rem;
+      padding:5px 18px; border-radius:999px; margin:12px 0 6px;
+    }
+    .grade-s { background:rgba(251,191,36,.15); color:var(--yellow); border:2px solid rgba(251,191,36,.4); }
+    .grade-a { background:rgba(52,211,153,.15);  color:var(--green);  border:2px solid rgba(52,211,153,.4); }
+    .grade-b { background:rgba(96,165,250,.15);  color:var(--blue);   border:2px solid rgba(96,165,250,.4); }
+    .grade-c { background:rgba(251,146,60,.15);  color:var(--orange); border:2px solid rgba(251,146,60,.4); }
+    .grade-d { background:rgba(248,113,113,.15); color:var(--red);    border:2px solid rgba(248,113,113,.4); }
+
+    .score-blurb {
+      background:var(--bg2); border:1px solid var(--border); border-radius:14px;
+      padding:14px 16px; font-size:.85rem; font-weight:600; color:var(--text-muted);
+      line-height:1.65; text-align:left;
+    }
+    .blurb-title { font-weight:800; color:var(--text); margin-bottom:6px; font-size:.9rem; }
+
+    /* ── Receipt / ledger ── */
+    .ledger-tabs { display:flex; gap:6px; margin-bottom:14px; }
+    .ledger-tab {
+      flex:1; padding:9px 10px; background:var(--card); border:2px solid var(--border);
+      border-radius:12px; font-family:'Nunito',sans-serif; font-weight:800; font-size:.8rem;
+      color:var(--text-muted); cursor:pointer; text-align:center; transition:all .18s;
+    }
+    .ledger-tab:hover { border-color:var(--border-hi); color:var(--text); }
+    .ledger-tab.active { background:var(--card2); border-color:var(--purple); color:var(--purple); }
+
+    .ledger-list { display:flex; flex-direction:column; gap:7px; }
+
+    .ledger-entry {
+      display:flex; align-items:center; gap:12px;
+      background:var(--card); border:2px solid var(--border); border-radius:14px;
+      padding:12px 16px;
+    }
+    .entry-icon { font-size:1.4rem; flex-shrink:0; width:32px; text-align:center; }
+    .entry-info { flex:1; }
+    .entry-label { font-size:.88rem; font-weight:800; }
+    .entry-time  { font-size:.7rem; font-weight:700; color:var(--text-muted); margin-top:1px; }
+    .entry-amount { font-family:'Fredoka One',cursive; font-size:1.05rem; flex-shrink:0; }
+    .entry-amount.earn  { color:var(--green); }
+    .entry-amount.spend { color:var(--red); }
+
+    .empty-msg {
+      text-align:center; padding:32px 20px;
+      color:var(--text-muted); font-weight:700; font-size:.9rem;
+    }
+    .empty-msg .empty-icon { font-size:2.4rem; display:block; margin-bottom:8px; }
+
+    /* category breakdown */
+    .breakdown-list { display:flex; flex-direction:column; gap:8px; }
+    .breakdown-row {
+      display:flex; align-items:center; gap:10px;
+      background:var(--bg2); border-radius:12px; padding:10px 14px;
+    }
+    .bk-icon { font-size:1.2rem; width:28px; text-align:center; flex-shrink:0; }
+    .bk-label { flex:1; font-size:.82rem; font-weight:800; }
+    .bk-bar-wrap { flex:2; height:8px; background:var(--bg); border-radius:999px; overflow:hidden; }
+    .bk-bar      { height:100%; border-radius:999px; }
+    .bk-val  { font-size:.82rem; font-weight:800; color:var(--text-muted); flex-shrink:0; min-width:32px; text-align:right; }
+  </style>
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script src="nav.js"></script>
+
+  <div class="page">
+    <div class="page-title">📊 Finances</div>
+    <p class="page-sub">Your complete money history</p>
+
+    <!-- Top summary -->
+    <div class="summary-row">
+      <div class="summary-chip earned">
+        <span class="sum-icon">💚</span>
+        <div class="sum-val" id="totalEarnedVal">$0</div>
+        <div class="sum-lbl">Earned</div>
+      </div>
+      <div class="summary-chip spent">
+        <span class="sum-icon">🔴</span>
+        <div class="sum-val" id="totalSpentVal">$0</div>
+        <div class="sum-lbl">Spent</div>
+      </div>
+      <div class="summary-chip balance">
+        <span class="sum-icon">💰</span>
+        <div class="sum-val" id="balanceVal">$0</div>
+        <div class="sum-lbl">Balance</div>
+      </div>
+    </div>
+
+    <!-- Score card -->
+    <div class="score-card">
+      <div class="score-card-title">📈 Financial Health Score</div>
+
+      <div class="big-circle-wrap">
+        <svg class="ring-svg" width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="56" fill="none" stroke="var(--bg2)" stroke-width="10"/>
+          <circle cx="65" cy="65" r="56" fill="none" id="bigRingFill"
+            stroke="url(#overallGrad)" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="351.86"
+            stroke-dashoffset="351.86"
+            transform="rotate(-90 65 65)"
+            style="transition:stroke-dashoffset 1.2s cubic-bezier(.25,.8,.25,1)"/>
+          <defs>
+            <linearGradient id="overallGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#fbbf24"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="big-score-num" id="overallScoreNum">—</div>
+      </div>
+      <div class="big-score-label">Overall Score</div>
+
+      <div id="scoreGrade" class="score-grade grade-b">—</div>
+
+      <!-- Category mini-circles -->
+      <div class="circles-row" id="circlesRow"></div>
+
+      <!-- Blurb -->
+      <div class="score-blurb">
+        <div class="blurb-title" id="blurbTitle">Analyzing your finances…</div>
+        <div id="blurbBody">Start playing to generate a financial report!</div>
+      </div>
+    </div>
+
+    <!-- Spending breakdown -->
+    <div class="card">
+      <div class="card-title">Spending Breakdown</div>
+      <div class="breakdown-list" id="breakdownList"></div>
+    </div>
+
+    <!-- Ledger -->
+    <div class="card">
+      <div class="card-title">Transaction History</div>
+      <div class="ledger-tabs">
+        <button class="ledger-tab active" id="tabAll"    onclick="setTab('all')">All</button>
+        <button class="ledger-tab"        id="tabEarned" onclick="setTab('earned')">Earned</button>
+        <button class="ledger-tab"        id="tabSpent"  onclick="setTab('spent')">Spent</button>
+      </div>
+      <div class="ledger-list" id="ledgerList"></div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+  <script>
+    let currentTab = 'all';
+
+    // ── Mini circle helper ──────────────────────────────────────
+    function makeMiniCircle(score, label, color) {
+      const r = 28, circ = 2 * Math.PI * r;
+      const offset = circ - (score / 100) * circ;
+      const id = 'mc_' + label.replace(/\s/g,'');
+      return `
+        <div class="score-circle-wrap">
+          <svg class="ring-svg" width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="var(--bg2)" stroke-width="7"/>
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="${color}" stroke-width="7"
+              stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}"
+              stroke-dashoffset="${circ.toFixed(2)}" id="${id}"
+              transform="rotate(-90 35 35)"
+              style="transition:stroke-dashoffset 1.2s cubic-bezier(.25,.8,.25,1)"/>
+            <text x="35" y="40" text-anchor="middle" font-family="Fredoka One,cursive"
+              font-size="14" fill="var(--text)">${score}</text>
+          </svg>
+          <div class="score-circle-lbl">${label}</div>
+        </div>`;
+    }
+
+    // ── Score calculation ────────────────────────────────────────
+    function calcScores(s) {
+      const earned  = s.totalEarned || 0;
+      const spent   = s.totalExpenses || 0;
+      const balance = s.money || 0;
+      const net     = earned - spent + 150; // 150 = starting money
+
+      // Earning score — 100 pts at $200 earned
+      const earningScore = Math.min(100, Math.round((earned / 200) * 100));
+
+      // Savings score — ratio of balance to net cash
+      const savingsScore = net > 0
+        ? Math.min(100, Math.round((balance / Math.max(balance + spent, 1)) * 100))
+        : 20;
+
+      // Spending efficiency — lower spend-to-earn ratio is better
+      let spendScore;
+      if (earned === 0 && spent === 0) { spendScore = 50; }
+      else if (earned === 0) { spendScore = 10; }
+      else {
+        const ratio = spent / earned;
+        spendScore = Math.min(100, Math.max(0, Math.round((1 - ratio) * 100)));
+        // bonus for spending smart (small amounts often)
+      }
+
+      // Overall: weighted average
+      const overall = Math.round(earningScore * 0.35 + savingsScore * 0.35 + spendScore * 0.30);
+
+      return { earningScore, savingsScore, spendScore, overall };
+    }
+
+    function getGrade(score) {
+      if (score >= 90) return { letter:'S', cls:'grade-s', title:'Financially Elite!' };
+      if (score >= 75) return { letter:'A', cls:'grade-a', title:'Great Money Manager' };
+      if (score >= 60) return { letter:'B', cls:'grade-b', title:'Solid Finances' };
+      if (score >= 45) return { letter:'C', cls:'grade-c', title:'Room to Improve' };
+      return { letter:'D', cls:'grade-d', title:'Needs Attention' };
+    }
+
+    function buildBlurb(s, scores) {
+      const { earningScore, savingsScore, spendScore, overall } = scores;
+      const earned = s.totalEarned || 0;
+      const spent  = s.totalExpenses || 0;
+      const balance = s.money || 0;
+
+      const tips = [];
+
+      if (earned < 50)
+        tips.push('🎮 Play more mini-games to boost your income — aim for the Reaction or Math Blitz games for the highest payouts.');
+      else if (earned < 150)
+        tips.push('💪 Solid earning so far! Try chaining multiple mini-game rounds before spending to build a bigger buffer.');
+
+      if (spendScore < 50 && earned > 0)
+        tips.push('✂️ You\'re spending a high proportion of what you earn. Try using free actions (Rest) to reduce care costs.');
+
+      if (balance < 30)
+        tips.push('⚠️ Your balance is low — avoid vet visits and premium items until you rebuild from mini-games.');
+
+      if (savingsScore > 70)
+        tips.push('🏦 Great savings ratio! Consider investing in passive shop items like the Cozy Pet Bed or Aquarium.');
+
+      if (spendScore > 80 && earned > 50)
+        tips.push('🌟 Excellent spending discipline! You\'re ready to invest in a high-value item like the Ultra Ball or XP Crystal.');
+
+      if (tips.length === 0)
+        tips.push('🐾 Keep caring for your pet consistently. Balanced play, feeding, and rest is the foundation of a healthy budget.');
+
+      const grade = getGrade(overall);
+      return {
+        title: grade.title,
+        body: tips.join('\n\n'),
+      };
+    }
+
+    // ── Breakdown categories ─────────────────────────────────────
+    function buildBreakdown(ledger) {
+      const cats = {
+        feed:  { icon:'🍖', label:'Feeding',    total:0, color:'#fb923c' },
+        clean: { icon:'🛁', label:'Cleaning',   total:0, color:'#2dd4bf' },
+        vet:   { icon:'🏥', label:'Vet Visits',  total:0, color:'#34d399' },
+        shop:  { icon:'🛒', label:'Shop Items',  total:0, color:'#a78bfa' },
+        other: { icon:'💸', label:'Other',       total:0, color:'#60a5fa' },
+      };
+      ledger.filter(e => e.type === 'spend').forEach(e => {
+        if (e.category && cats[e.category]) cats[e.category].total += e.amount;
+        else cats.other.total += e.amount;
+      });
+      const maxVal = Math.max(...Object.values(cats).map(c => c.total), 1);
+      return Object.values(cats).filter(c => c.total > 0).map(c => ({...c, pct: c.total / maxVal * 100}));
+    }
+
+    // ── Ledger data from state ────────────────────────────────────
+    function getLedger(s) {
+      return s.ledger || [];
+    }
+
+    // ── Render ───────────────────────────────────────────────────
+    function setTab(tab) {
+      currentTab = tab;
+      ['all','earned','spent'].forEach(t => {
+        document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+      });
+      renderLedger();
+    }
+
+    function renderLedger() {
+      const s = getState();
+      const ledger = getLedger(s);
+      const filtered = currentTab === 'all' ? ledger
+        : currentTab === 'earned' ? ledger.filter(e => e.type === 'earn')
+        : ledger.filter(e => e.type === 'spend');
+
+      const el = document.getElementById('ledgerList');
+      if (filtered.length === 0) {
+        el.innerHTML = `<div class="empty-msg"><span class="empty-icon">📭</span>No transactions yet. Start playing!</div>`;
+        return;
+      }
+
+      el.innerHTML = [...filtered].reverse().map(entry => {
+        const sign  = entry.type === 'earn' ? '+$' : '-$';
+        const cls   = entry.type === 'earn' ? 'earn' : 'spend';
+        const ts    = new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        return `<div class="ledger-entry">
+          <div class="entry-icon">${entry.icon || '💸'}</div>
+          <div class="entry-info">
+            <div class="entry-label">${entry.label}</div>
+            <div class="entry-time">${ts}</div>
+          </div>
+          <div class="entry-amount ${cls}">${sign}${entry.amount}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function render() {
+      const s = getState();
+
+      // Summaries
+      const earned  = s.totalEarned || 0;
+      const spent   = s.totalExpenses || 0;
+      const balance = s.money || 0;
+      document.getElementById('totalEarnedVal').textContent = '$' + earned;
+      document.getElementById('totalSpentVal').textContent  = '$' + spent;
+      document.getElementById('balanceVal').textContent     = '$' + balance;
+
+      // Scores
+      const scores = calcScores(s);
+      const { earningScore, savingsScore, spendScore, overall } = scores;
+
+      // Big ring
+      const circ = 2 * Math.PI * 56;
+      const offset = circ - (overall / 100) * circ;
+      setTimeout(() => {
+        document.getElementById('bigRingFill').style.strokeDashoffset = offset.toFixed(2);
+      }, 100);
+      document.getElementById('overallScoreNum').textContent = overall;
+
+      // Grade
+      const grade = getGrade(overall);
+      const gradeEl = document.getElementById('scoreGrade');
+      gradeEl.textContent = grade.letter;
+      gradeEl.className = 'score-grade ' + grade.cls;
+
+      // Mini circles
+      const miniDefs = [
+        { score: earningScore, label: 'Earning',  color: '#34d399' },
+        { score: savingsScore, label: 'Savings',  color: '#a78bfa' },
+        { score: spendScore,   label: 'Efficiency', color: '#fbbf24' },
+      ];
+      document.getElementById('circlesRow').innerHTML = miniDefs.map(d =>
+        makeMiniCircle(d.score, d.label, d.color)
+      ).join('');
+
+      // Animate mini circles after render
+      setTimeout(() => {
+        miniDefs.forEach(d => {
+          const el = document.getElementById('mc_' + d.label.replace(/\s/g,''));
+          if (!el) return;
+          const r = 28, c = 2 * Math.PI * r;
+          el.style.strokeDashoffset = (c - (d.score / 100) * c).toFixed(2);
+        });
+      }, 150);
+
+      // Blurb
+      const blurb = buildBlurb(s, scores);
+      document.getElementById('blurbTitle').textContent = blurb.title;
+      document.getElementById('blurbBody').textContent  = blurb.body;
+
+      // Breakdown
+      const ledger = getLedger(s);
+      const breakdown = buildBreakdown(ledger);
+      const bdEl = document.getElementById('breakdownList');
+      if (breakdown.length === 0) {
+        bdEl.innerHTML = `<div style="color:var(--text-muted);font-weight:700;font-size:.85rem;text-align:center;padding:12px">No spending yet!</div>`;
+      } else {
+        bdEl.innerHTML = breakdown.map(b => `
+          <div class="breakdown-row">
+            <div class="bk-icon">${b.icon}</div>
+            <div class="bk-label">${b.label}</div>
+            <div class="bk-bar-wrap"><div class="bk-bar" style="width:${b.pct.toFixed(1)}%;background:${b.color}"></div></div>
+            <div class="bk-val">$${b.total}</div>
+          </div>`).join('');
+      }
+
+      renderLedger();
+    }
+
+    window.addEventListener('petTick', render);
+    render();
+  </script>
+</body>
+</html>
